@@ -1,32 +1,28 @@
-# React + TypeScript + Vite
+# cardbox
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A personal spaced-repetition flashcard app. One person, two devices, no server,
+no cost.
 
-Currently, two official plugins are available:
+Reviews are scheduled with [FSRS-6](https://github.com/open-spaced-repetition/ts-fsrs)
+so each card returns roughly when it is about to be forgotten. Everything works
+offline; a private GitHub repository is the sync target rather than a backend.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Status
 
-## React Compiler
+Stages 1, 2 and 4 of 7 are done — storage, reviewing, and import from
+CSV/TSV/xlsx. Sync and deployment are still ahead.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Running it
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev      # http://localhost:5173/cardbox/
+npm run check    # lint, typecheck, tests
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Where to read next
+
+- [`HANDOFF.md`](HANDOFF.md) — how it is built, what is decided, and what is next.
+  Start here.
+- [`../prd-cardbox.md`](../prd-cardbox.md) — what it is for and, more usefully,
+  what it deliberately does not do.

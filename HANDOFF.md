@@ -245,6 +245,12 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
   the mapped column number is therefore off by one; read the selected option's text.
 - **This workbook has an empty shared-string table.** Text arrives in `t="str"` cells, so
   a reader that only handles `t="s"` returns a sheet of blanks.
+- **Test navigation by clicking, not by URL.** Driving the browser with `Page.navigate`
+  reaches every route and proves nothing about whether anything links to them. The deck
+  rows on Today rendered correctly and were dead for a whole stage because
+  `/review/:deckId` existed but nothing pointed at it. Click links; assert `location`.
+- **react-router normalises the basename**, so the index route is `/cardbox`, not
+  `/cardbox/`. Assert on both.
 - **Fine-grained PATs expire**, one year maximum. The settings screen must show the expiry rather than only reporting failure afterwards.
 - **`api.github.com` allows browser requests** — CORS is not a problem here.
 - **500 cards per chunk is an estimate**, not a measurement. Revisit once a real 10,000-card deck exists. Because the number is stored per card, changing it later needs a migration pass, not a recomputation.
