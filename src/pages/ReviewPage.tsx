@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import type { Card } from '#src/types.ts'
-import { buildQueue, nextDue } from '#src/lib/queue.ts'
+import { buildQueue, nextDue, queueCounts, remainingToday } from '#src/lib/queue.ts'
 import { answer, formatInterval, preview, GRADES, GRADE_LABEL } from '#src/lib/scheduler.ts'
 import type { GradeValue } from '#src/lib/scheduler.ts'
 import { getAllCards, getCardsByDeck } from '#src/lib/idb.ts'
@@ -20,6 +20,7 @@ export default function ReviewPage() {
   const { settings, todayLog, recordAnswer } = useStore()
 
   const [cards, setCards] = useState<Card[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
   const [tick, setTick] = useState(0)
   const [done, setDone] = useState(0)
@@ -30,7 +31,18 @@ export default function ReviewPage() {
   const [seed] = useState(() => Math.floor(Math.random() * 2 ** 31))
 
   useEffect(() => {
-    void (deckId ? getCardsByDeck(deckId) : getAllCards()).then(setCards)
+    let cancelled = false
+    setCards(null)
+    setLoadError(null)
+    // A rejected read used to leave the screen on "Loading…" forever, which is
+    // indistinguishable from a dead tap. Surface it instead.
+    void (deckId ? getCardsByDeck(deckId) : getAllCards()).then(
+      (loaded) => !cancelled && setCards(loaded),
+      (e: unknown) => !cancelled && setLoadError(e instanceof Error ? e.message : String(e)),
+    )
+    return () => {
+      cancelled = true
+    }
   }, [deckId])
 
   const queue = useMemo(() => {
@@ -89,20 +101,49 @@ export default function ReviewPage() {
     return () => window.removeEventListener('keydown', onKey)
   }, [revealed, rate])
 
+  if (loadError) {
+    return (
+      <section className="space-y-4 text-center">
+        <h1 className="text-2xl font-semibold">Could not open this deck</h1>
+        <p className="text-sm opacity-60">{loadError}</p>
+        <Link to="/" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
+          Back to Today
+        </Link>
+      </section>
+    )
+  }
+
   if (!cards) return <p className="text-sm opacity-50">Loading…</p>
 
   if (!current) {
     const next = nextDue(cards, new Date())
     const soon = next && +next > Date.now()
+    const counts = queueCounts({ cards, todayLog, settings, now: new Date() })
+    const { newLeft } = remainingToday(todayLog, settings)
+    // An empty queue has more than one cause, and they call for different
+    // actions: waiting, raising a limit, or adding cards. Say which it is.
+    const cappedNew = counts.unseen > 0 && newLeft === 0
+
     return (
       <section className="space-y-4 text-center">
         <h1 className="text-2xl font-semibold">
           {done > 0 ? 'Session complete' : 'Nothing due'}
         </h1>
         {done > 0 && <p className="text-sm opacity-60">{done} cards reviewed.</p>}
-        {soon && (
+
+        {cappedNew && (
+          <p className="text-sm opacity-60">
+            {counts.unseen} cards are still waiting to be introduced, but today's limit of{' '}
+            {settings.newPerDay} new cards is used up. Raise it in settings to go further today.
+          </p>
+        )}
+        {!cappedNew && soon && (
           <p className="text-sm opacity-60">Next card in {formatInterval(+next - Date.now())}.</p>
         )}
+        {!cappedNew && !soon && cards.length === 0 && (
+          <p className="text-sm opacity-60">This deck has no cards yet.</p>
+        )}
+
         <Link to="/" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
           Back to Today
         </Link>

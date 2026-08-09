@@ -78,10 +78,16 @@ export default function TodayPage() {
       )}
 
       {/* Each deck is its own entry point — tapping one reviews just that deck,
-          which is the whole reason the /review/:deckId route exists. */}
+          which is the whole reason the /review/:deckId route exists.
+
+          Every row is a link, including decks with nothing due. An earlier
+          version made those inert, which read as a broken tap: the row was
+          visibly there and pressing it did nothing at all. The review screen
+          already explains an empty queue, so let it. */}
       <ul className="divide-y divide-black/10 rounded-lg border border-black/10">
         {rows.map((row) => {
           const due = row.counts.total > 0
+          const capped = row.counts.unseen > 0 && row.counts.new === 0
           const body = (
             <>
               <div className="flex items-baseline justify-between gap-3">
@@ -102,17 +108,22 @@ export default function TodayPage() {
                       )}
                       <span className="ml-2 opacity-30">›</span>
                     </>
+                  ) : capped ? (
+                    <span className="opacity-50">done for today ›</span>
                   ) : row.next ? (
-                    <span className="opacity-50">next in {formatInterval(+row.next - +now)}</span>
+                    <span className="opacity-50">next in {formatInterval(+row.next - +now)} ›</span>
                   ) : (
-                    <span className="opacity-50">—</span>
+                    <span className="opacity-50">no cards ›</span>
                   )}
                 </span>
               </div>
               {row.counts.unseen > row.counts.new && (
                 <p className="mt-1 text-xs opacity-50">
-                  {row.counts.unseen} not yet introduced · {settings.newPerDay}/day →{' '}
-                  {Math.ceil(row.counts.unseen / Math.max(1, settings.newPerDay))} days
+                  {capped
+                    ? `${row.counts.unseen} still to introduce · daily limit of ${settings.newPerDay} reached`
+                    : `${row.counts.unseen} not yet introduced · ${settings.newPerDay}/day → ${Math.ceil(
+                        row.counts.unseen / Math.max(1, settings.newPerDay),
+                      )} days`}
                 </p>
               )}
             </>
@@ -120,13 +131,12 @@ export default function TodayPage() {
 
           return (
             <li key={row.id}>
-              {due ? (
-                <Link to={`/review/${row.id}`} className="block px-4 py-3 active:bg-black/5">
-                  {body}
-                </Link>
-              ) : (
-                <div className="px-4 py-3">{body}</div>
-              )}
+              <Link
+                to={`/review/${row.id}`}
+                className={`block px-4 py-3 active:bg-black/5 ${due ? '' : 'opacity-70'}`}
+              >
+                {body}
+              </Link>
             </li>
           )
         })}
