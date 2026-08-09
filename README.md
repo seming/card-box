@@ -24,5 +24,5 @@ npm run check    # lint, typecheck, tests
 
 - [`HANDOFF.md`](HANDOFF.md) — how it is built, what is decided, and what is next.
   Start here.
-- [`../prd-cardbox.md`](../prd-cardbox.md) — what it is for and, more usefully,
+- [`prd-cardbox.md`](prd-cardbox.md) — what it is for and, more usefully,
   what it deliberately does not do.

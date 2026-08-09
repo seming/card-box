@@ -6,7 +6,7 @@ Read this file first in a new session.
 |---|---|
 | **Last updated** | 2026-08-10 |
 | **Stage** | 4 of 7 — importing and reviewing both work. Stage 3 (deck screens) deferred; stage 5 (sync) is next |
-| **Product spec** | [`../prd-cardbox.md`](../prd-cardbox.md) — what and why. This file is how. |
+| **Product spec** | [`prd-cardbox.md`](prd-cardbox.md) — what and why. This file is how. |
 | **Repository** | `seming/card-box` (public). Data repo for stage 5 not created yet. |
 | **Deployment** | Not yet. GitHub Pages wiring is stage 6, at `https://seming.github.io/card-box/`. |
 
@@ -299,7 +299,31 @@ The token is entered in the app's settings screen. It never goes in the code or 
 
 ## 10. Starting a new session
 
+On a machine that already has the project:
+
 ```
-Read /Users/semin/practice/cardbox/HANDOFF.md and start there.
+Read HANDOFF.md and start there.
 Do not re-litigate §0. Ask before starting the next stage.
 ```
+
+From nothing:
+
+```bash
+git clone git@github.com:seming/card-box.git
+cd card-box
+npm install
+npm run check          # lint, typecheck, 139 tests — all should pass
+npm run dev            # http://localhost:5173/card-box/
+```
+
+Then load a deck: **Import** → choose `samples/b1-lesen-teil.xlsx` → the sheet,
+header row and column mapping fill themselves in → **Import**. Nothing else is
+needed; there is no server and no account, and the browser holds the data.
+
+Requires Node 24 or newer — the tests import `.ts` files directly and rely on
+native type stripping.
+
+Everything needed to continue is in this repository: this file, the PRD beside
+it, the source, the tests, and the real deck as a fixture. Review state lives in
+the browser, not in git, so a fresh clone starts with an empty collection —
+that is expected until sync lands in stage 5.
