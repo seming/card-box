@@ -10,6 +10,7 @@ import tailwindcss from '@tailwindcss/vite'
 // PWA (vite-plugin-pwa) is wired up in stage 6, not here — a service worker
 // during early development caches stale builds and hides real bugs.
 export default defineConfig({
-  base: '/cardbox/',
+  // Must match the repository name — GitHub Pages serves at /<repo>/.
+  base: '/card-box/',
   plugins: [react(), tailwindcss()],
 })

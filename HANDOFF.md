@@ -7,7 +7,8 @@ Read this file first in a new session.
 | **Last updated** | 2026-08-10 |
 | **Stage** | 4 of 7 — importing and reviewing both work. Stage 3 (deck screens) deferred; stage 5 (sync) is next |
 | **Product spec** | [`../prd-cardbox.md`](../prd-cardbox.md) — what and why. This file is how. |
-| **Deployment** | Not yet. GitHub Pages wiring is stage 6. |
+| **Repository** | `seming/card-box` (public). Data repo for stage 5 not created yet. |
+| **Deployment** | Not yet. GitHub Pages wiring is stage 6, at `https://seming.github.io/card-box/`. |
 
 ---
 
@@ -17,7 +18,7 @@ These were decided with reasoning that took real work. Reopening them repeats it
 
 | # | Decision | Why |
 |---|---|---|
-| 1 | **GitHub is the database.** Code in public `cardbox`, data in private `cardbox-data`, written from the browser via the Contents API with a fine-grained PAT. | Only free option that syncs two devices with no server and versions everything. Pages on the free plan needs a public repo, so code and data must be separate. |
+| 1 | **GitHub is the database.** Code in public `card-box`, data in a private data repo, written from the browser via the Contents API with a fine-grained PAT. | Only free option that syncs two devices with no server and versions everything. Pages on the free plan needs a public repo, so code and data must be separate. |
 | 2 | **`ts-fsrs` owns the scheduling math.** Never hand-roll it. | A wrong interval still looks like a plausible interval. The bug would be invisible for months. |
 | 3 | **Reviews are logged forever, with `duration`.** | Sole input to future parameter optimization, and the daily counts derive from it. `duration` cannot be reconstructed later. |
 | 4 | **Offline-first.** IndexedDB is the working store; GitHub is a sync target reached at session boundaries. | The primary device is a phone in motion. Needing the network to review means not reviewing. |
@@ -33,7 +34,7 @@ These were decided with reasoning that took real work. Reopening them repeats it
 ```
 cardbox/
 ├── HANDOFF.md            ← this file
-├── vite.config.ts        base '/cardbox/', react + tailwind. PWA lands in stage 6.
+├── vite.config.ts        base '/card-box/' — must equal the repo name. React + tailwind.
 ├── tsconfig.app.json     erasableSyntaxOnly on
 ├── package.json          `imports` maps '#src/*' → './src/*' (see below)
 ├── src/
@@ -249,8 +250,11 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
   reaches every route and proves nothing about whether anything links to them. The deck
   rows on Today rendered correctly and were dead for a whole stage because
   `/review/:deckId` existed but nothing pointed at it. Click links; assert `location`.
-- **react-router normalises the basename**, so the index route is `/cardbox`, not
-  `/cardbox/`. Assert on both.
+- **react-router normalises the basename**, so the index route is `/card-box`, not
+  `/card-box/`. Assert on both.
+- **`base` in vite.config.ts must equal the GitHub repository name.** The repo is
+  `card-box`, so Pages serves at `/card-box/` and every asset URL and the router
+  basename derive from it. A mismatch gives a blank page with 404s on the assets.
 - **Fine-grained PATs expire**, one year maximum. The settings screen must show the expiry rather than only reporting failure afterwards.
 - **`api.github.com` allows browser requests** — CORS is not a problem here.
 - **500 cards per chunk is an estimate**, not a measurement. Revisit once a real 10,000-card deck exists. Because the number is stored per card, changing it later needs a migration pass, not a recomputation.

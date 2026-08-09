@@ -16,7 +16,7 @@ CSV/TSV/xlsx. Sync and deployment are still ahead.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173/cardbox/
+npm run dev      # http://localhost:5173/card-box/
 npm run check    # lint, typecheck, tests
 ```
 
