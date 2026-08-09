@@ -242,6 +242,10 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
 
 - **`State` and `Rating` values are load-bearing.** `types.ts` defines them as `as const` objects whose values match both `ts-fsrs`'s enums and the FSRS optimizer's `review_state` / `review_rating` columns. That alignment is why the review log exports with no translation table. Do not renumber. `Rating.Manual = 0` must be filtered out on export.
 - **`btoa()` mangles Korean.** Use `TextEncoder` → `Uint8Array` → base64 when writing to the Contents API.
+- **Verify against a fresh clone, not the working copy.** `fflate` was installed into a
+  parent directory by accident and never reached `package.json`; Node resolves upwards, so
+  everything passed locally while a clone failed to typecheck. `git clone` to a temp
+  directory, `npm install`, `npm run check` — that is the only check that catches this.
 - **Do not reach for a tsconfig `paths` alias.** Only TypeScript sees it, so `node --test`
   fails to resolve the pure modules. package.json `imports` is read by Node, TypeScript
   and Vite alike, which is why `#src/*` is used. Imports need the explicit `.ts` extension.
