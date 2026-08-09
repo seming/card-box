@@ -40,12 +40,12 @@ function card(state, dueAt, extra = {}) {
   }
 }
 
-function logEntry(state, reviewAt) {
+function logEntry(state, reviewAt, deckId = 'd1') {
   n++
   return {
     id: `l${n}`,
     cardId: `c${n}`,
-    deckId: 'd1',
+    deckId,
     rating: Rating.Good,
     state,
     due: reviewAt.toISOString(),
@@ -361,5 +361,63 @@ describe('nextDue', () => {
     const now = at(2026, 8, 8, 12, 0)
     const cards = [card(State.Review, at(2026, 8, 9, 5), { deleted: true })]
     assert.equal(nextDue(cards, now), null)
+  })
+})
+
+
+describe('daily limits are per deck', () => {
+  // Regression: the limits used to be counted across every deck at once, so
+  // finishing one deck made a deck imported minutes later report "done for
+  // today" without ever having been seen.
+  const now = at(2026, 8, 8, 12, 0)
+
+  test('one deck’s answers do not consume another’s allowance', () => {
+    const deckA = Array.from({ length: 5 }, () => card(State.New, now, { deckId: 'A' }))
+    const deckB = Array.from({ length: 30 }, () => card(State.New, now, { deckId: 'B' }))
+    const log = Array.from({ length: 20 }, () => logEntry(State.New, at(2026, 8, 8, 10), 'A'))
+
+    const counts = queueCounts(input([...deckA, ...deckB], now, log))
+    assert.equal(counts.new, 20, 'deck B should still get its full allowance')
+    assert.equal(buildQueue(input([...deckA, ...deckB], now, log)).length, 20)
+  })
+
+  test('a freshly imported deck is reviewable on a day already spent elsewhere', () => {
+    const spent = Array.from({ length: 20 }, () => logEntry(State.New, at(2026, 8, 8, 10), 'old'))
+    const imported = Array.from({ length: 312 }, () => card(State.New, now, { deckId: 'new' }))
+
+    const counts = queueCounts(input(imported, now, spent))
+    assert.equal(counts.new, 20)
+    assert.equal(counts.total, 20)
+    assert.equal(counts.unseen, 312)
+  })
+
+  test('the exhausted deck really is exhausted', () => {
+    const deckA = Array.from({ length: 5 }, () => card(State.New, now, { deckId: 'A' }))
+    const log = Array.from({ length: 20 }, () => logEntry(State.New, at(2026, 8, 8, 10), 'A'))
+    assert.equal(queueCounts(input(deckA, now, log)).total, 0)
+  })
+
+  test('remainingToday scopes to a deck when asked', () => {
+    const log = [
+      ...Array.from({ length: 20 }, () => logEntry(State.New, at(2026, 8, 8, 10), 'A')),
+      ...Array.from({ length: 3 }, () => logEntry(State.New, at(2026, 8, 8, 10), 'B')),
+    ]
+    assert.equal(remainingToday(log, settings, 'A').newLeft, 0)
+    assert.equal(remainingToday(log, settings, 'B').newLeft, 17)
+    assert.equal(remainingToday(log, settings).newLeft, 0, 'unscoped still counts everything')
+  })
+
+  test('review limits are per deck too', () => {
+    const deckB = Array.from({ length: 10 }, () => card(State.Review, at(2026, 8, 8, 6), { deckId: 'B' }))
+    const log = Array.from({ length: 200 }, () => logEntry(State.Review, at(2026, 8, 8, 10), 'A'))
+    assert.equal(queueCounts(input(deckB, now, log)).review, 10)
+  })
+
+  test('learning cards from every deck still come first', () => {
+    const cards = [
+      card(State.Review, at(2026, 8, 8, 6), { deckId: 'A', id: 'rev' }),
+      card(State.Learning, at(2026, 8, 8, 11), { deckId: 'B', id: 'learn' }),
+    ]
+    assert.equal(buildQueue(input(cards, now)).map((c) => c.id)[0], 'learn')
   })
 })

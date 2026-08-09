@@ -149,7 +149,16 @@ fsrs(generatorParameters({
 
 **Order:** learning/relearning cards with `due <= now` first; then review cards due before tomorrow's 04:00, earliest first with a random tiebreak; then new cards in creation order. Reviews and new cards are **interleaved**, matching Anki's "mix with reviews".
 
-**Daily limits** are derived from the review log, not a stored counter — count today's entries with `state === New` and `state === Review`. Learning repeats do not consume the limit. Since the log syncs, cross-device totals add up for free; a separate counter would need its own merge rules for no gain.
+**Daily limits are per deck**, as they are in Anki, and derived from the review log rather
+than a stored counter — count today's entries for that deck with `state === New` and
+`state === Review`. Learning repeats do not consume the limit. Since the log syncs,
+cross-device totals add up for free; a separate counter would need its own merge rules for
+no gain.
+
+Counting globally was a real bug, not a hypothetical one: studying one deck made a deck
+imported minutes later report "done for today" without ever having been seen. `buildQueue`
+and `queueCounts` group by deck and apply the allowance separately; learning cards from
+every deck still come first, since they are mid-flight.
 
 ---
 
@@ -252,6 +261,11 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
   `/review/:deckId` existed but nothing pointed at it. Click links; assert `location`.
 - **react-router normalises the basename**, so the index route is `/card-box`, not
   `/card-box/`. Assert on both.
+- **Daily limits are per deck.** `remainingToday` takes an optional `deckId` and callers
+  should pass it. Omitting it counts every deck together, which starves new decks.
+- **The study day starts at 04:00, so late-evening work counts as "today" until 4am.**
+  Reviews done at 22:00 still consume the allowance at 01:00 the next morning. This is
+  correct, and it surprises people — including while debugging.
 - **`base` in vite.config.ts must equal the GitHub repository name.** The repo is
   `card-box`, so Pages serves at `/card-box/` and every asset URL and the router
   basename derive from it. A mismatch gives a blank page with 404s on the assets.

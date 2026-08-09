@@ -50,7 +50,7 @@ function mulberry32(seed: number): () => number {
 const live = (c: Card) => !c.deleted
 
 /**
- * How much of today's allowance is left.
+ * How much of today's allowance is left, for one deck or across all of them.
  *
  * Counted from the review log rather than a stored counter: the log syncs, so
  * two devices add up for free, and a separate counter would need merge rules of
@@ -58,14 +58,20 @@ const live = (c: Card) => !c.deleted
  *
  * Learning repeats do not consume anything. A lapsed card that comes back three
  * times in one session is one review, not four — same as Anki.
+ *
+ * **Pass `deckId`.** The limits are per deck, as they are in Anki. Counting
+ * globally means finishing one deck silently blocks every other one — a deck
+ * imported minutes ago would report "done for today" without ever being seen.
  */
 export function remainingToday(
   todayLog: ReviewLogEntry[],
   settings: Settings,
+  deckId?: string,
 ): { newLeft: number; reviewLeft: number } {
   let newDone = 0
   let reviewDone = 0
   for (const entry of todayLog) {
+    if (deckId !== undefined && entry.deckId !== deckId) continue
     if (entry.state === State.New) newDone++
     else if (entry.state === State.Review) reviewDone++
   }
@@ -144,11 +150,26 @@ function interleave<T>(base: T[], extra: T[]): T[] {
  * 2. Review cards due before tomorrow's 04:00, earliest first, capped.
  * 3. New cards in creation order, capped — interleaved into 2 rather than appended.
  */
-export function buildQueue(input: QueueInput): Card[] {
-  const { cards, todayLog, settings, now, seed = 0 } = input
+/** Splits cards by deck so each deck gets its own allowance. */
+function byDeck(cards: Card[]): Map<string, Card[]> {
+  const groups = new Map<string, Card[]>()
+  for (const card of cards) {
+    const group = groups.get(card.deckId)
+    if (group) group.push(card)
+    else groups.set(card.deckId, [card])
+  }
+  return groups
+}
+
+function deckQueue(
+  cards: Card[],
+  deckId: string,
+  input: QueueInput,
+  rand: () => number,
+): { learning: Card[]; rest: Card[] } {
+  const { todayLog, settings, now } = input
   const { learning, review, fresh } = partition(cards, now, settings)
-  const { newLeft, reviewLeft } = remainingToday(todayLog, settings)
-  const rand = mulberry32(seed)
+  const { newLeft, reviewLeft } = remainingToday(todayLog, settings, deckId)
 
   learning.sort((a, b) => a.fsrs.due.localeCompare(b.fsrs.due))
 
@@ -162,25 +183,45 @@ export function buildQueue(input: QueueInput): Card[] {
 
   fresh.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
 
-  return [...learning, ...interleave(review.slice(0, reviewLeft), fresh.slice(0, newLeft))]
+  return {
+    learning,
+    rest: interleave(review.slice(0, reviewLeft), fresh.slice(0, newLeft)),
+  }
+}
+
+export function buildQueue(input: QueueInput): Card[] {
+  const rand = mulberry32(input.seed ?? 0)
+  const learning: Card[] = []
+  const rest: Card[] = []
+
+  for (const [deckId, cards] of byDeck(input.cards)) {
+    const q = deckQueue(cards, deckId, input, rand)
+    learning.push(...q.learning)
+    rest.push(...q.rest)
+  }
+
+  // Learning cards come first across every deck — they are mid-flight and the
+  // steps break if they wait.
+  learning.sort((a, b) => a.fsrs.due.localeCompare(b.fsrs.due))
+  return [...learning, ...rest]
 }
 
 /** Counts for the Today screen. Same rules as `buildQueue`, without materializing it. */
 export function queueCounts(input: QueueInput): QueueCounts {
-  const { cards, todayLog, settings, now } = input
-  const { learning, review, fresh, unseen } = partition(cards, now, settings)
-  const { newLeft, reviewLeft } = remainingToday(todayLog, settings)
+  const { todayLog, settings, now } = input
+  const counts: QueueCounts = { learning: 0, review: 0, new: 0, unseen: 0, total: 0 }
 
-  const reviewCount = Math.min(review.length, reviewLeft)
-  const newCount = Math.min(fresh.length, newLeft)
+  for (const [deckId, cards] of byDeck(input.cards)) {
+    const { learning, review, fresh, unseen } = partition(cards, now, settings)
+    const { newLeft, reviewLeft } = remainingToday(todayLog, settings, deckId)
 
-  return {
-    learning: learning.length,
-    review: reviewCount,
-    new: newCount,
-    unseen,
-    total: learning.length + reviewCount + newCount,
+    counts.learning += learning.length
+    counts.review += Math.min(review.length, reviewLeft)
+    counts.new += Math.min(fresh.length, newLeft)
+    counts.unseen += unseen
   }
+  counts.total = counts.learning + counts.review + counts.new
+  return counts
 }
 
 /** When the next card becomes due, or null if none is scheduled. For the empty state. */

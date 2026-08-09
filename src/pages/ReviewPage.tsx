@@ -119,7 +119,8 @@ export default function ReviewPage() {
     const next = nextDue(cards, new Date())
     const soon = next && +next > Date.now()
     const counts = queueCounts({ cards, todayLog, settings, now: new Date() })
-    const { newLeft } = remainingToday(todayLog, settings)
+    // Per deck, matching the queue — a global count would blame the wrong deck.
+    const { newLeft } = remainingToday(todayLog, settings, deckId)
     // An empty queue has more than one cause, and they call for different
     // actions: waiting, raising a limit, or adding cards. Say which it is.
     const cappedNew = counts.unseen > 0 && newLeft === 0
