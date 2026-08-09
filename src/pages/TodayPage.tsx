@@ -1,0 +1,144 @@
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import type { Card } from '#src/types.ts'
+import { queueCounts, nextDue } from '#src/lib/queue.ts'
+import type { QueueCounts } from '#src/lib/queue.ts'
+import { formatInterval } from '#src/lib/scheduler.ts'
+import { useStore } from '#src/store/useStore.ts'
+
+interface Row {
+  id: string
+  name: string
+  counts: QueueCounts
+  next: Date | null
+}
+
+export default function TodayPage() {
+  const { decks, settings, todayLog, loadDeckCards } = useStore()
+  const [rows, setRows] = useState<Row[]>([])
+  const now = new Date()
+
+  useEffect(() => {
+    let cancelled = false
+    async function build() {
+      const built = await Promise.all(
+        decks.map(async (deck) => {
+          const cards: Card[] = await loadDeckCards(deck.id)
+          const input = { cards, todayLog, settings, now: new Date() }
+          return { id: deck.id, name: deck.name, counts: queueCounts(input), next: nextDue(cards, new Date()) }
+        }),
+      )
+      if (!cancelled) setRows(built)
+    }
+    void build()
+    return () => {
+      cancelled = true
+    }
+    // `now` is intentionally excluded — recomputing on every render would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decks, todayLog, settings, loadDeckCards])
+
+  const total = rows.reduce((n, r) => n + r.counts.total, 0)
+  const unseen = rows.reduce((n, r) => n + r.counts.unseen, 0)
+  const newToday = rows.reduce((n, r) => n + r.counts.new, 0)
+  /** Only worth mentioning when today's limit will not clear the backlog. */
+  const hasBacklog = unseen > newToday
+
+  if (decks.length === 0) {
+    return (
+      <section className="space-y-4">
+        <h1 className="text-2xl font-semibold">Today</h1>
+        <p className="text-sm opacity-60">
+          No decks yet. Create one in Manage to get started — importing a file arrives in a later
+          stage.
+        </p>
+        <Link to="/manage" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
+          Go to Manage
+        </Link>
+      </section>
+    )
+  }
+
+  return (
+    <section className="space-y-6">
+      <header className="space-y-1">
+        <h1 className="text-2xl font-semibold">Today</h1>
+        <p className="text-sm opacity-60">
+          {total > 0 ? `${total} cards to review` : 'Nothing due right now'}
+        </p>
+      </header>
+
+      {total > 0 && (
+        <Link
+          to="/review"
+          className="block rounded-lg bg-black py-4 text-center text-lg font-medium text-white"
+        >
+          Start reviewing
+        </Link>
+      )}
+
+      {/* Each deck is its own entry point — tapping one reviews just that deck,
+          which is the whole reason the /review/:deckId route exists. */}
+      <ul className="divide-y divide-black/10 rounded-lg border border-black/10">
+        {rows.map((row) => {
+          const due = row.counts.total > 0
+          const body = (
+            <>
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="font-medium">{row.name}</span>
+                <span className="text-sm tabular-nums">
+                  {due ? (
+                    <>
+                      {row.counts.learning > 0 && (
+                        <span className="text-orange-600">{row.counts.learning} learning</span>
+                      )}
+                      {row.counts.learning > 0 &&
+                        (row.counts.review > 0 || row.counts.new > 0) &&
+                        ' · '}
+                      {row.counts.review > 0 && <span>{row.counts.review} review</span>}
+                      {row.counts.review > 0 && row.counts.new > 0 && ' · '}
+                      {row.counts.new > 0 && (
+                        <span className="text-blue-700">{row.counts.new} new</span>
+                      )}
+                      <span className="ml-2 opacity-30">›</span>
+                    </>
+                  ) : row.next ? (
+                    <span className="opacity-50">next in {formatInterval(+row.next - +now)}</span>
+                  ) : (
+                    <span className="opacity-50">—</span>
+                  )}
+                </span>
+              </div>
+              {row.counts.unseen > row.counts.new && (
+                <p className="mt-1 text-xs opacity-50">
+                  {row.counts.unseen} not yet introduced · {settings.newPerDay}/day →{' '}
+                  {Math.ceil(row.counts.unseen / Math.max(1, settings.newPerDay))} days
+                </p>
+              )}
+            </>
+          )
+
+          return (
+            <li key={row.id}>
+              {due ? (
+                <Link to={`/review/${row.id}`} className="block px-4 py-3 active:bg-black/5">
+                  {body}
+                </Link>
+              ) : (
+                <div className="px-4 py-3">{body}</div>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+
+      {/* PRD §7: the backlog must be visible, not discovered months later. */}
+      {hasBacklog && (
+        <p className="text-xs opacity-50">
+          {unseen} cards have never been shown. Raise the daily new limit in settings if that pace is
+          too slow.
+        </p>
+      )}
+    </section>
+  )
+}

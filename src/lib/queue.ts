@@ -1,0 +1,196 @@
+import type { Card, ReviewLogEntry, Settings } from '#src/types.ts'
+import { State } from '#src/types.ts'
+import { dayEnd, dayStart } from '#src/lib/day.ts'
+
+/**
+ * Deciding which cards to show, and in what order.
+ *
+ * Pure on purpose: `now` and `seed` come in as arguments and nothing here reads
+ * a clock, a random source, or a store. That is what lets `node --test` cover it
+ * without a browser — and this is one of the two places where a defect is
+ * invisible in the UI, so it has to be covered.
+ *
+ * Deliberately does not import `ts-fsrs`. Only `state` and `fsrs.due` matter
+ * here, both of which live on our own `Card`.
+ */
+
+export interface QueueInput {
+  cards: Card[]
+  /** Reviews already logged in the current study day. Drives the daily limits. */
+  todayLog: ReviewLogEntry[]
+  settings: Settings
+  now: Date
+  /** Fixed seed keeps ordering deterministic in tests. */
+  seed?: number
+}
+
+export interface QueueCounts {
+  /** Learning or relearning and due right now. Never capped — these are mid-flight. */
+  learning: number
+  /** Review cards due today, after the daily cap. */
+  review: number
+  /** New cards that will be introduced today, after the daily cap. */
+  new: number
+  /** Every card never studied, ignoring the cap. Surfaces the size of a backlog. */
+  unseen: number
+  total: number
+}
+
+/** Deterministic PRNG so a shuffled order can still be asserted in tests. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+const live = (c: Card) => !c.deleted
+
+/**
+ * How much of today's allowance is left.
+ *
+ * Counted from the review log rather than a stored counter: the log syncs, so
+ * two devices add up for free, and a separate counter would need merge rules of
+ * its own for no benefit.
+ *
+ * Learning repeats do not consume anything. A lapsed card that comes back three
+ * times in one session is one review, not four — same as Anki.
+ */
+export function remainingToday(
+  todayLog: ReviewLogEntry[],
+  settings: Settings,
+): { newLeft: number; reviewLeft: number } {
+  let newDone = 0
+  let reviewDone = 0
+  for (const entry of todayLog) {
+    if (entry.state === State.New) newDone++
+    else if (entry.state === State.Review) reviewDone++
+  }
+  return {
+    newLeft: Math.max(0, settings.newPerDay - newDone),
+    reviewLeft: Math.max(0, settings.reviewsPerDay - reviewDone),
+  }
+}
+
+/** Reviews belonging to the study day that contains `now`. */
+export function todaysReviews(log: ReviewLogEntry[], now: Date, settings: Settings): ReviewLogEntry[] {
+  const from = dayStart(now, settings.dayStartHour).toISOString()
+  const to = dayEnd(now, settings.dayStartHour).toISOString()
+  return log.filter((e) => e.review >= from && e.review < to)
+}
+
+function partition(cards: Card[], now: Date, settings: Settings) {
+  const nowIso = now.toISOString()
+  const endIso = dayEnd(now, settings.dayStartHour).toISOString()
+
+  const learning: Card[] = []
+  const review: Card[] = []
+  const fresh: Card[] = []
+  let unseen = 0
+
+  for (const card of cards) {
+    if (!live(card)) continue
+    const { state, due } = card.fsrs
+
+    if (state === State.New) {
+      unseen++
+      fresh.push(card)
+    } else if (state === State.Learning || state === State.Relearning) {
+      // Strictly due now. A step scheduled for later today surfaces when the
+      // clock reaches it, which is how Anki behaves.
+      if (due <= nowIso) learning.push(card)
+    } else if (due < endIso) {
+      review.push(card)
+    }
+  }
+  return { learning, review, fresh, unseen }
+}
+
+/**
+ * Spread `extra` through `base` instead of appending it.
+ *
+ * Anki's default is "mix with reviews", and the reason is workload: twenty new
+ * cards in a row at the end of a session is where people quit. Even spacing
+ * keeps the hard items apart.
+ */
+function interleave<T>(base: T[], extra: T[]): T[] {
+  if (extra.length === 0) return base
+  if (base.length === 0) return extra
+
+  const out: T[] = []
+  const gap = base.length / extra.length
+  let next = 0
+  let placed = 0
+
+  for (let i = 0; i < base.length; i++) {
+    while (placed < extra.length && i >= next) {
+      out.push(extra[placed++])
+      next = placed * gap
+    }
+    out.push(base[i])
+  }
+  while (placed < extra.length) out.push(extra[placed++])
+  return out
+}
+
+/**
+ * The cards to study now, in order.
+ *
+ * 1. Learning and relearning cards that are due — always first, always uncapped.
+ *    They are mid-flight and dropping them would break the learning steps.
+ * 2. Review cards due before tomorrow's 04:00, earliest first, capped.
+ * 3. New cards in creation order, capped — interleaved into 2 rather than appended.
+ */
+export function buildQueue(input: QueueInput): Card[] {
+  const { cards, todayLog, settings, now, seed = 0 } = input
+  const { learning, review, fresh } = partition(cards, now, settings)
+  const { newLeft, reviewLeft } = remainingToday(todayLog, settings)
+  const rand = mulberry32(seed)
+
+  learning.sort((a, b) => a.fsrs.due.localeCompare(b.fsrs.due))
+
+  // Random tiebreak so a batch imported in one second is not always reviewed in
+  // import order. Assigned before sorting so the comparator stays consistent.
+  const jitter = new Map(review.map((c) => [c.id, rand()]))
+  review.sort(
+    (a, b) =>
+      a.fsrs.due.localeCompare(b.fsrs.due) || (jitter.get(a.id) ?? 0) - (jitter.get(b.id) ?? 0),
+  )
+
+  fresh.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+
+  return [...learning, ...interleave(review.slice(0, reviewLeft), fresh.slice(0, newLeft))]
+}
+
+/** Counts for the Today screen. Same rules as `buildQueue`, without materializing it. */
+export function queueCounts(input: QueueInput): QueueCounts {
+  const { cards, todayLog, settings, now } = input
+  const { learning, review, fresh, unseen } = partition(cards, now, settings)
+  const { newLeft, reviewLeft } = remainingToday(todayLog, settings)
+
+  const reviewCount = Math.min(review.length, reviewLeft)
+  const newCount = Math.min(fresh.length, newLeft)
+
+  return {
+    learning: learning.length,
+    review: reviewCount,
+    new: newCount,
+    unseen,
+    total: learning.length + reviewCount + newCount,
+  }
+}
+
+/** When the next card becomes due, or null if none is scheduled. For the empty state. */
+export function nextDue(cards: Card[], now: Date): Date | null {
+  const nowIso = now.toISOString()
+  let soonest: string | null = null
+  for (const card of cards) {
+    if (!live(card) || card.fsrs.state === State.New) continue
+    if (card.fsrs.due <= nowIso) return now
+    if (soonest === null || card.fsrs.due < soonest) soonest = card.fsrs.due
+  }
+  return soonest ? new Date(soonest) : null
+}

@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-ink: oklch(0.22 0.02 260);
+  --color-paper: oklch(0.99 0.003 260);
+}
+
+html {
+  /* Respect the iOS notch and home indicator. Panels opt in with pb-safe etc. */
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-paper text-ink antialiased;
+  margin: 0;
+  overscroll-behavior-y: none;
+}
