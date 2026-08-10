@@ -300,7 +300,17 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
 - **`base` in vite.config.ts must equal the GitHub repository name.** The repo is
   `card-box`, so Pages serves at `/card-box/` and every asset URL and the router
   basename derive from it. A mismatch gives a blank page with 404s on the assets.
-- **Fine-grained PATs expire**, one year maximum. The settings screen must show the expiry rather than only reporting failure afterwards.
+- **Fine-grained PATs expire**, one year maximum. The settings screen must show the expiry
+  rather than only reporting failure afterwards. Prefer 90 days over a year — the app
+  surfaces the expiry anyway, and it narrows the window if the token ever leaks.
+- **`seming.github.io` is one origin for every Pages project on the account.** localStorage
+  is keyed by origin, not by path, so anything published at `seming.github.io/anything/`
+  can read the token stored by `/card-box/`. Publishing an unvetted template or a
+  third-party bundle under the same account is enough. Nothing in this repository can
+  prevent it; worth remembering when the next Pages project goes up.
+- **Cards render as text, and should stay that way.** React escapes by default, which is
+  the only reason an imported deck cannot carry script. Allowing HTML in card fields, as
+  Anki does, would turn any shared deck into a way to read the token out of localStorage.
 - **`api.github.com` allows browser requests** — CORS is not a problem here.
 - **500 cards per chunk is an estimate**, not a measurement. Revisit once a real 10,000-card deck exists. Because the number is stored per card, changing it later needs a migration pass, not a recomputation.
 
