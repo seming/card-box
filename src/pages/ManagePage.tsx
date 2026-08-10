@@ -41,6 +41,8 @@ function newCard(deckId: string, chunk: number, front: string, back: string): Ca
 export default function ManagePage() {
   // Today reads decks from the store, so every mutation here has to tell it.
   const refreshStore = useStore((s) => s.refreshDecks)
+  const settings = useStore((s) => s.settings)
+  const saveSettings = useStore((s) => s.saveSettings)
   const [decks, setDecks] = useState<Deck[]>([])
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [selected, setSelected] = useState<string | null>(null)
@@ -122,6 +124,61 @@ export default function ManagePage() {
           import — until then this is how cards get in.
         </p>
       </header>
+
+      {/* Minimal settings until stage 5 builds the real screen. The burying
+          switches ship off, matching Anki — but a deck of reverse cards needs
+          "new" on, so there has to be a way to turn it on. */}
+      <section className="space-y-3 rounded-lg border border-black/10 p-4 text-sm">
+        <h2 className="font-medium">Settings</h2>
+
+        <div className="space-y-2">
+          <p className="text-xs opacity-50">
+            Burying holds the other cards of a note until the next day. Anki ships all three
+            off; turn on <strong>new</strong> if your deck has reverse cards.
+          </p>
+          {(
+            [
+              ['buryNew', 'Bury new siblings'],
+              ['buryReviews', 'Bury review siblings'],
+              ['buryInterdayLearning', 'Bury interday learning siblings'],
+            ] as const
+          ).map(([key, label]) => (
+            <label key={key} className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={settings[key]}
+                onChange={(e) => void saveSettings({ [key]: e.target.checked })}
+              />
+              <span>{label}</span>
+            </label>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-4 pt-1">
+          <label className="flex items-center gap-2">
+            <span className="opacity-60">New / day</span>
+            <input
+              type="number"
+              min={0}
+              className="w-20 rounded border border-black/20 px-2 py-1"
+              value={settings.newPerDay}
+              onChange={(e) => void saveSettings({ newPerDay: Math.max(0, Number(e.target.value)) })}
+            />
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="opacity-60">Reviews / day</span>
+            <input
+              type="number"
+              min={0}
+              className="w-20 rounded border border-black/20 px-2 py-1"
+              value={settings.reviewsPerDay}
+              onChange={(e) =>
+                void saveSettings({ reviewsPerDay: Math.max(0, Number(e.target.value)) })
+              }
+            />
+          </label>
+        </div>
+      </section>
 
       <section className="rounded-lg border border-black/10 p-4 text-sm space-y-1">
         <h2 className="font-medium">Study day</h2>

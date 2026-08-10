@@ -132,22 +132,38 @@ function partition(
   const fresh: Card[] = []
   let unseen = 0
 
-  // One card per note per session, so a queue cannot contain both directions.
+  // At most one card per note per build, for the queues where burying is on.
+  // Anki reaches the same place by burying at answer time; deriving it here
+  // keeps the counts honest before the first answer.
   const claimed = new Set<string>()
 
   for (const card of cards) {
     if (!live(card)) continue
 
-    if (settings.burySiblings) {
+    const { state, due } = card.fsrs
+
+    /**
+     * Whether burying applies is keyed on the queue *this* card sits in, not on
+     * the card that was answered — matching Anki's wording: "bury new siblings"
+     * delays other **new** cards of the note.
+     */
+    const buryThis =
+      state === State.New
+        ? settings.buryNew
+        : state === State.Review
+          ? settings.buryReviews
+          : // Learning or relearning: only counts as interday once its step
+            // crosses into a later study day.
+            settings.buryInterdayLearning && due >= endIso
+
+    if (buryThis) {
       const sameNote = answeredNotes.get(noteOf(card))
-      // Buried only by a *sibling*. A learning card that comes back within its
-      // own steps must still appear, so a card is never buried by itself.
+      // Buried only by a *sibling*. A learning card returning within its own
+      // steps must still appear, so a card is never buried by itself.
       if (sameNote && !sameNote.has(card.id)) continue
       if (claimed.has(noteOf(card))) continue
       claimed.add(noteOf(card))
     }
-
-    const { state, due } = card.fsrs
 
     if (state === State.New) {
       unseen++

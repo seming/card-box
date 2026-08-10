@@ -11,6 +11,7 @@ import {
   getReviewsBetween,
   getSettings,
   putCard,
+  putSettings,
 } from '#src/lib/idb.ts'
 
 /**
@@ -45,6 +46,7 @@ interface State {
    */
   undo: () => Promise<Card | null>
   canUndo: () => boolean
+  saveSettings: (patch: Partial<Settings>) => Promise<void>
 }
 
 interface UndoStep {
@@ -90,6 +92,12 @@ export const useStore = create<State>((set, get) => ({
   },
 
   canUndo: () => undoStack.length > 0,
+
+  async saveSettings(patch) {
+    const settings = { ...get().settings, ...patch }
+    await putSettings(settings)
+    set({ settings })
+  },
 
   async undo() {
     const step = undoStack.pop()

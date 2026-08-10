@@ -143,8 +143,26 @@ export const SettingsSchema = z.object({
   learningSteps: z.array(stepSchema).default(['1m', '10m']),
   relearningSteps: z.array(stepSchema).default(['10m']),
   newPerDay: z.number().int().nonnegative().default(20),
-  /** Hold the other direction of a word until the next day, as Anki does. */
-  burySiblings: z.boolean().default(true),
+
+  /**
+   * Burying: hold the other cards of a note until the next study day.
+   *
+   * Three switches, keyed on the queue the *buried* card sits in, matching
+   * Anki's `bury_new` / `bury_reviews` / `bury_interday_learning` — including
+   * its defaults, which are all off.
+   *
+   * Off suits Anki's median user, who mostly has one card per note. It is wrong
+   * for a deck built with reverse cards: there every note has a sibling, so both
+   * directions run the same day and the second is a copying exercise. Turn
+   * `buryNew` on for such a deck.
+   */
+  buryNew: z.boolean().default(false),
+  buryReviews: z.boolean().default(false),
+  /**
+   * Learning cards that crossed a day boundary. With 1m/10m steps almost nothing
+   * lands here, so this exists for parity rather than effect.
+   */
+  buryInterdayLearning: z.boolean().default(false),
   reviewsPerDay: z.number().int().nonnegative().default(200),
   dayStartHour: z.number().int().min(0).max(23).default(4),
   /** Optimized FSRS weights. Empty until the optimizer has been run; see PRD §5. */

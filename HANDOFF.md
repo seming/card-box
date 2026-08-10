@@ -62,7 +62,7 @@ cardbox/
 │   └── goethe-b1-starter.csv    82 entries written from scratch, a starting point
 └── tests/
     ├── day.test.mjs      ✅ 20 tests
-    ├── queue.test.mjs    ✅ 52 tests — order, limits, burying
+    ├── queue.test.mjs    ✅ 55 tests — order, limits, burying
     ├── csv.test.mjs      ✅ 29 tests
     ├── xlsx.test.mjs     ✅ 15 tests
     └── import.test.mjs   ✅ 36 tests
@@ -87,8 +87,7 @@ it, so the pure modules were unreachable from tests.
   would produce. Space reveals, 1–4 rate.
 - **Review logging** with `duration`, from which the daily limits are derived.
 - Today screen with per-deck learning/review/new counts and a backlog warning.
-- **Sibling burying**: the two directions of a word share a `noteId`, and only one of
-  them runs per day.
+- **Sibling burying**, with Anki's three switches and Anki's defaults (all off).
 - **Undo** (`z`, or the button): restores the card exactly as it was and drops the log
   entry.
 - **Import** from CSV, TSV or .xlsx: sheet chooser, header-row chooser, column mapping,
@@ -155,23 +154,39 @@ fsrs(generatorParameters({
 
 ### Siblings
 
-The two cards of a word share `noteId`, set at import. A note yields at most one card per
-session, and answering one direction holds the other back until the next study day.
+The two cards of a word share `noteId`, set at import. Answering one direction can hold
+the other back until the next study day.
 
-Without this, reverse cards are close to useless: being shown `das Skigebiet → 스키장` and
-then `스키장 → das Skigebiet` an hour later is a copying exercise, not a review. Anki calls
-this burying siblings and has it on by default; generating reverse cards makes it required
-rather than nice to have.
+**Three switches, all off by default, matching Anki.** Verified against
+`rslib/src/deckconfig/mod.rs`, where `bury_new`, `bury_reviews` and
+`bury_interday_learning` are all `false`:
+
+| Setting | Buries |
+|---|---|
+| `buryNew` | other **new** cards of the note |
+| `buryReviews` | other **review** cards |
+| `buryInterdayLearning` | learning cards whose step crossed a day boundary |
+
+The switch is keyed on the queue the **buried** card sits in, not the answered one —
+Anki's wording is "bury new siblings", meaning delay the other *new* cards.
+
+Off is right for Anki's median user, who mostly has one card per note. It is wrong for a
+deck of reverse cards, where every note has a sibling: both directions then run the same
+day, and being shown `das Skigebiet → 스키장` and `스키장 → das Skigebiet` an hour apart is a
+copying exercise, not a review. Such a deck wants `buryNew` on, which is why the Manage
+screen carries a temporary toggle until the real settings screen exists.
+
+`buryInterdayLearning` is implemented for parity but has almost no effect here: with
+1m/10m steps, learning cards rarely cross a day boundary.
 
 Derived from the review log, like the daily limits — no stored bury state, nothing extra
-to merge on sync. **A card is never buried by itself**, only by a sibling, or a lapsed card
-would drop out of its own learning steps.
+to merge on sync. Anki instead stores it as a queue value and clears it at rollover; the
+observable behaviour is the same. **A card is never buried by itself**, only by a sibling,
+or a lapsed card would drop out of its own learning steps.
 
-`noteId` is optional on the schema. Cards created before notes existed fall back to their
-own id and behave as a note of one, so nothing needs migrating — but a deck imported
-before this change has unpaired directions and should be re-imported to gain them.
-
-Switch: `settings.burySiblings`, default on.
+`noteId` is optional. Cards created before notes existed fall back to their own id and
+behave as a note of one, so nothing needs migrating — but a deck imported before this
+change has unpaired directions and should be re-imported.
 
 ### Undo
 
