@@ -290,6 +290,24 @@ They sit in `public/` rather than being bundled into the JavaScript: nothing to 
 for anyone who never loads one, and `csv` is in the workbox glob so a phone that has never
 been online still has them.
 
+`German core — 3 stars` came from a legacy `.xls` (OLE2/BIFF8, not a zip — `lib/xlsx.ts`
+cannot read it). SheetJS was installed in a scratch directory for the one-off conversion
+rather than added to the project. Three things were decided while converting, and all
+three matter:
+
+- **The article rides the front** (`der Abend`, not `Abend`). A German noun is half-learned
+  without its gender — and it also keeps `arm` and `der Arm` apart, which would otherwise
+  collide on front and lose one of the pair. 89 such collisions existed in the full list.
+- **`고` in the article column is not an article.** It is the compiler's shorthand for
+  고유명사 on 18 proper nouns.
+- **One source typo was corrected.** Two rows read `eben`; the second means 생존하다, which
+  is `leben` — a verb otherwise absent from all 5,800. Left alone the deck would teach
+  `eben = 생존하다`.
+
+Only the 625 three-star entries ship: at 20 new cards a day the full 5,800 in both
+directions is a decade of study, and the compiler's own star ratings are a better filter
+than any we could invent. Credit is carried in `samples.ts` and shown under the deck.
+
 This exists for the first five minutes on a phone. Getting an xlsx into the iOS Files app
 is the most annoying step in the product, and it sits between a new install and finding out
 whether the app is any good.

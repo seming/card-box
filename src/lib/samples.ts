@@ -18,6 +18,8 @@ export interface SampleDeck {
   file: string
   cards: number
   description: string
+  /** Shown under the deck. Present when the content came from somewhere. */
+  credit?: string
   /** Column layout is known, so the importer opens with it already applied. */
   mapping: ColumnMapping
   lang: string
@@ -26,6 +28,19 @@ export interface SampleDeck {
 }
 
 export const SAMPLE_DECKS: SampleDeck[] = [
+  {
+    id: 'de-5800-star3',
+    name: 'German core — 3 stars',
+    file: 'decks/de-5800-star3.csv',
+    cards: 625,
+    description:
+      'The 625 highest-priority words from a 5,800-word list. Nouns carry their article on the front, so the gender is learned with the word.',
+    credit:
+      'Compiled by mindcool (2010) from the Dong-A Prime German–Korean dictionary, and shared for free redistribution. Only the three-star entries are included.',
+    mapping: { front: 0, back: 1, example: null, note: null, tags: [2] },
+    lang: 'de-DE',
+    reverse: true,
+  },
   {
     id: 'b1-lesen-teil',
     name: 'B1 Lesen — Teil order',

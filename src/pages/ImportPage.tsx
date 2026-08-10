@@ -237,6 +237,9 @@ export default function ImportPage() {
               <span className="shrink-0 text-xs opacity-50">{deck.cards} entries</span>
             </span>
             <span className="mt-0.5 block text-xs opacity-60">{deck.description}</span>
+            {deck.credit && (
+              <span className="mt-1 block text-xs opacity-40">{deck.credit}</span>
+            )}
           </button>
         ))}
       </div>
