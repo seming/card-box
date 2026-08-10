@@ -165,6 +165,19 @@ export function answer(
   }
 }
 
+/**
+ * A card's current recall probability, per FSRS.
+ *
+ * Returned as a closure so `lib/stats.ts` can stay free of `ts-fsrs` and keep
+ * running under `node --test`. The formula belongs to the library — FSRS-6 makes
+ * the decay a learned parameter, so hand-rolling it would drift the moment the
+ * weights are optimized.
+ */
+export function retrievabilityOf(settings: Settings, now: Date): (card: Card) => number {
+  const f = scheduler(settings)
+  return (card) => f.get_retrievability(toFsrs(card.fsrs), now, false)
+}
+
 /* ── formatting ─────────────────────────────────────────────────────────── */
 
 /** Anki-style compact interval: `<1m`, `10m`, `5h`, `4d`, `2.1mo`, `1.4y`. */

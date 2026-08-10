@@ -5,7 +5,7 @@ Read this file first in a new session.
 | | |
 |---|---|
 | **Last updated** | 2026-08-10 |
-| **Stage** | Importing and reviewing work, with sibling burying and undo. Deployment (6) is next; deck screens (3) and sync (5) after |
+| **Stage** | Reviewing, importing and statistics all work. Deployment (6) is next; deck screens (3) and sync (5) after |
 | **Product spec** | [`prd-cardbox.md`](prd-cardbox.md) — what and why. This file is how. |
 | **Repository** | `seming/card-box` (public). Data repo for stage 5 not created yet. |
 | **Deployment** | Not yet. GitHub Pages wiring is stage 6, at `https://seming.github.io/card-box/`. |
@@ -46,14 +46,17 @@ cardbox/
 │   │   ├── idb.ts        ✅ IndexedDB store
 │   │   ├── scheduler.ts  ✅ the only file that imports ts-fsrs
 │   │   ├── queue.ts      ✅ pure — order, daily limits, interleaving
+│   │   ├── stats.ts      ✅ pure — retention, forecasts, distributions
 │   │   ├── csv.ts        ✅ pure — CSV/TSV, delimiter and header detection
 │   │   ├── xlsx.ts       ✅ pure — .xlsx via fflate, no DOMParser
 │   │   └── import.ts     ✅ pure — rows → cards, reverse, dedupe, chunks
+│   ├── components/charts.tsx  SVG primitives; no chart library
 │   ├── store/useStore.ts ✅ zustand: settings, decks, today's log
 │   └── pages/
 │       ├── AppShell.tsx  bottom tabs, safe-area aware
 │       ├── TodayPage.tsx per-deck counts, backlog warning
 │       ├── ReviewPage.tsx ✅ the review loop
+│       ├── StatsPage.tsx ✅ Anki's statistics, minus Card Ease
 │       ├── ImportPage.tsx ✅ file or paste → sheet → header → mapping → preview
 │       └── ManagePage.tsx ★ stage-1 harness — replaced in stage 3
 ├── samples/
@@ -90,6 +93,7 @@ it, so the pure modules were unreachable from tests.
 - **Sibling burying**, with Anki's three switches and Anki's defaults (all off).
 - **Undo** (`z`, or the button): restores the card exactly as it was and drops the log
   entry.
+- **Statistics**, per deck and per time range — see §8.
 - **Import** from CSV, TSV or .xlsx: sheet chooser, header-row chooser, column mapping,
   live preview, reverse-card generation, duplicate handling, chunk continuation.
 
@@ -97,7 +101,7 @@ Intervals for a brand-new card come out as `1m / 6m / 10m / 8d`, which is what A
 produces with the same steps — a useful sanity check if scheduling ever looks wrong.
 
 Verified in headless Chrome: 26/26 for the review loop, 19/19 for importing the real
-workbook end to end — see §7.
+workbook end to end — see §8.
 
 ---
 
@@ -299,7 +303,48 @@ would mean building against an untested spec.
 
 ---
 
-## 7. Verification
+## 7. Statistics
+
+Anki's set, with one deliberate omission: **Card Ease measures SM-2's ease factor, which
+FSRS does not have** — Anki hides it under FSRS too. Stability, difficulty and
+retrievability take its place.
+
+Definitions follow Anki so the figures mean the same thing. A card is **mature** at an
+interval of 21 days, an answer **passes** when it is not Again, and an answer's maturity is
+judged by the interval the card carried *into* the review — so a card maturing on this
+answer still counts as young for it.
+
+**True retention excludes learning answers.** Retention asks whether a scheduled interval
+held, and a card inside its learning steps has no interval to test. Counting them would
+inflate the number.
+
+All aggregation lives in `lib/stats.ts`, pure and unit-tested, for the same reason the
+queue and the merge are: a wrong retention rate renders as a perfectly plausible
+percentage. Retrievability is the exception that proves it — the formula belongs to
+`ts-fsrs` (FSRS-6 makes the decay a learned parameter), so `scheduler.ts` supplies it as an
+injected function and `stats.ts` stays runnable under `node --test`.
+
+### Chart rules that are not preferences
+
+- **The categorical order is the colour-blindness mechanism.** The first five slots of a
+  validated order — blue, orange, aqua, yellow, magenta. Picking "nicer" hues by skipping
+  to green put aqua beside green and failed dark-mode separation at ΔE 11.9 against a floor
+  of 15. Run the palette validator before changing any of it; do not eyeball it.
+- **Never two y-axes.** Anki draws hourly count and pass rate on one plot with two scales,
+  which invents a relationship. They are two charts here.
+- **Every chart has a table view.** On the light surface aqua, yellow and magenta sit below
+  3:1 contrast, and the table is the required relief, not a nicety. It also means no value
+  is reachable only through a tooltip.
+- **One filter row above everything**, never per chart.
+- Bars cap at 24px, touching fills are separated by a 2px gap in the surface colour rather
+  than a stroke, grid lines are solid hairlines.
+- Dark mode is a **selected** set of steps for the dark surface, not an inverted light one,
+  and `index.css` drives the whole app from it. Theming only the charts left dark heatmap
+  cells sitting on a white page, which reads worse than no dark mode at all.
+
+---
+
+## 8. Verification
 
 ```bash
 npm test          # node --test over tests/**/*.test.mjs
@@ -315,7 +360,7 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
 
 ---
 
-## 8. Gotchas
+## 9. Gotchas
 
 - **`State` and `Rating` values are load-bearing.** `types.ts` defines them as `as const` objects whose values match both `ts-fsrs`'s enums and the FSRS optimizer's `review_state` / `review_rating` columns. That alignment is why the review log exports with no translation table. Do not renumber. `Rating.Manual = 0` must be filtered out on export.
 - **`btoa()` mangles Korean.** Use `TextEncoder` → `Uint8Array` → base64 when writing to the Contents API.
@@ -366,13 +411,14 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
 
 ---
 
-## 9. Next
+## 10. Next
 
 - [x] **Stage 1** — scaffold, deps, `types.ts`, `day.ts`, `idb.ts`, this file
 - [x] **Stage 2** — `scheduler.ts`, `queue.ts`, router, Today and Review screens, logging with `duration`
 - [ ] **Stage 3** — DecksPage, DeckDetailPage, CardEditor, virtual scrolling. Deferred past stage 4; `ManagePage` still covers deck creation and shows only the first 50 cards
 - [x] **Stage 4** — `csv.ts`, `xlsx.ts`, `import.ts`, ImportPage. Done ahead of stage 3 so the real deck could be loaded. `scripts/import-csv.mjs` moved to stage 5 — see §6
 - [ ] **Stage 5** — `github.ts`, `merge.ts`, `sync.ts`, `scripts/import-csv.mjs`, SettingsPage. `merge.test.mjs`, then the real two-device divergence run
+- [x] **Statistics** — `stats.ts`, `charts.tsx`, StatsPage. Done before deployment on request
 - [ ] **Stage 6** — PWA, icons, GitHub Actions deploy, iPhone home screen
 - [ ] **Stage 7** — reconcile this file against the code
 
@@ -388,7 +434,7 @@ The token is entered in the app's settings screen. It never goes in the code or 
 
 ---
 
-## 10. Starting a new session
+## 11. Starting a new session
 
 On a machine that already has the project:
 

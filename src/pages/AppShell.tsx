@@ -9,6 +9,7 @@ import { useStore } from '#src/store/useStore.ts'
 
 const TABS = [
   { to: '/', label: 'Today', end: true },
+  { to: '/stats', label: 'Stats', end: false },
   { to: '/import', label: 'Import', end: false },
   { to: '/manage', label: 'Manage', end: false },
 ]
@@ -29,7 +30,7 @@ export default function AppShell() {
       </main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 border-t border-black/10 bg-paper/95 backdrop-blur"
+        className="fixed inset-x-0 bottom-0 border-t border-[var(--line)] bg-[var(--surface)]/95 backdrop-blur"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="mx-auto flex max-w-2xl">

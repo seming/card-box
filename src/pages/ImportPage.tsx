@@ -215,7 +215,7 @@ export default function ImportPage() {
           }}
         />
         <button
-          className="w-full rounded-lg border border-black/20 py-3 text-sm"
+          className="w-full rounded-lg border border-[var(--line)] py-3 text-sm"
           onClick={() => fileInput.current?.click()}
         >
           {fileName || 'Choose a file'}
@@ -224,7 +224,7 @@ export default function ImportPage() {
         <details className="text-sm">
           <summary className="cursor-pointer opacity-60">or paste rows</summary>
           <textarea
-            className="mt-2 h-28 w-full rounded border border-black/20 p-2 font-mono text-xs"
+            className="mt-2 h-28 w-full rounded border border-[var(--line)] p-2 font-mono text-xs"
             placeholder={'front\tback\ndas Skigebiet\t스키장'}
             value={pasted}
             onChange={(e) => onPaste(e.target.value)}
@@ -232,7 +232,7 @@ export default function ImportPage() {
         </details>
       </div>
 
-      {error && <p className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded bg-[var(--line)] p-3 text-sm">{error}</p>}
 
       {source && (
         <>
@@ -240,7 +240,7 @@ export default function ImportPage() {
             <label className="block space-y-1 text-sm">
               <span className="opacity-60">Sheet</span>
               <select
-                className="w-full rounded border border-black/20 px-2 py-2"
+                className="w-full rounded border border-[var(--line)] px-2 py-2"
                 value={sheetIndex}
                 onChange={(e) => adopt(source, Number(e.target.value))}
               >
@@ -257,7 +257,7 @@ export default function ImportPage() {
             <label className="space-y-1">
               <span className="opacity-60">Header row</span>
               <select
-                className="w-full rounded border border-black/20 px-2 py-2"
+                className="w-full rounded border border-[var(--line)] px-2 py-2"
                 value={headerRow}
                 onChange={(e) => {
                   const next = Number(e.target.value)
@@ -277,7 +277,7 @@ export default function ImportPage() {
               <label className="space-y-1">
                 <span className="opacity-60">Delimiter</span>
                 <select
-                  className="w-full rounded border border-black/20 px-2 py-2"
+                  className="w-full rounded border border-[var(--line)] px-2 py-2"
                   value={delimiter}
                   onChange={(e) => {
                     const d = e.target.value as Delimiter
@@ -303,7 +303,7 @@ export default function ImportPage() {
                   {field.required && <span className="text-red-600"> *</span>}
                 </span>
                 <select
-                  className="flex-1 rounded border border-black/20 px-2 py-2"
+                  className="flex-1 rounded border border-[var(--line)] px-2 py-2"
                   value={mapping[field.key] ?? ''}
                   onChange={(e) => setField(field.key, e.target.value === '' ? null : Number(e.target.value))}
                 >
@@ -325,7 +325,7 @@ export default function ImportPage() {
                     key={i}
                     onClick={() => toggleTag(i)}
                     className={`rounded-full px-2.5 py-1 text-xs ${
-                      mapping.tags.includes(i) ? 'bg-black text-white' : 'bg-black/5 opacity-60'
+                      mapping.tags.includes(i) ? 'bg-[var(--accent)] text-[var(--on-accent)]' : 'bg-[var(--line)] opacity-60'
                     }`}
                   >
                     {h}
@@ -339,9 +339,9 @@ export default function ImportPage() {
           {ready && (
             <div className="space-y-2">
               <h2 className="text-sm font-medium">Preview</h2>
-              <div className="overflow-x-auto rounded border border-black/10">
+              <div className="overflow-x-auto rounded border border-[var(--line)]">
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-black/5 text-xs opacity-60">
+                  <thead className="bg-[var(--line)] text-xs opacity-60">
                     <tr>
                       <th className="px-3 py-2">Front</th>
                       <th className="px-3 py-2">Back</th>
@@ -349,7 +349,7 @@ export default function ImportPage() {
                       <th className="px-3 py-2">Tags</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-black/5">
+                  <tbody className="divide-y divide-[var(--line)]">
                     {(dryRun?.cards ?? []).slice(0, 5).map((c, i) => (
                       <tr key={i}>
                         <td className="px-3 py-2">{c.front}</td>
@@ -386,7 +386,7 @@ export default function ImportPage() {
             <label className="flex items-center gap-3">
               <span className="w-20 shrink-0 opacity-60">Duplicates</span>
               <select
-                className="flex-1 rounded border border-black/20 px-2 py-2"
+                className="flex-1 rounded border border-[var(--line)] px-2 py-2"
                 value={duplicates}
                 onChange={(e) => setDuplicates(e.target.value as DuplicateMode)}
               >
@@ -399,7 +399,7 @@ export default function ImportPage() {
             <label className="flex items-center gap-3">
               <span className="w-20 shrink-0 opacity-60">Language</span>
               <input
-                className="flex-1 rounded border border-black/20 px-2 py-2"
+                className="flex-1 rounded border border-[var(--line)] px-2 py-2"
                 placeholder="de-DE (optional, for future speech)"
                 value={lang}
                 onChange={(e) => setLang(e.target.value)}
@@ -409,7 +409,7 @@ export default function ImportPage() {
             <label className="flex items-center gap-3">
               <span className="w-20 shrink-0 opacity-60">Deck</span>
               <select
-                className="flex-1 rounded border border-black/20 px-2 py-2"
+                className="flex-1 rounded border border-[var(--line)] px-2 py-2"
                 value={deckChoice}
                 onChange={(e) => setDeckChoice(e.target.value)}
               >
@@ -426,7 +426,7 @@ export default function ImportPage() {
               <label className="flex items-center gap-3">
                 <span className="w-20 shrink-0 opacity-60">Name</span>
                 <input
-                  className="flex-1 rounded border border-black/20 px-2 py-2"
+                  className="flex-1 rounded border border-[var(--line)] px-2 py-2"
                   placeholder={fileName.replace(/\.[^.]+$/, '') || 'Imported deck'}
                   value={deckName}
                   onChange={(e) => setDeckName(e.target.value)}
@@ -448,7 +448,7 @@ export default function ImportPage() {
           )}
 
           <button
-            className="w-full rounded-lg bg-black py-3.5 text-white disabled:opacity-30"
+            className="w-full rounded-lg bg-[var(--accent)] py-3.5 text-[var(--on-accent)] disabled:opacity-30"
             disabled={!ready || busy}
             onClick={() => void run()}
           >

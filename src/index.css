@@ -1,8 +1,67 @@
 @import 'tailwindcss';
 
-@theme {
-  --color-ink: oklch(0.22 0.02 260);
-  --color-paper: oklch(0.99 0.003 260);
+/**
+ * Chart tokens.
+ *
+ * Categorical slots are the first five of a validated order — blue, orange,
+ * aqua, yellow, magenta — kept in that order because the ordering *is* the
+ * colour-blindness safety mechanism, not a preference. Skipping to green put
+ * aqua beside green and failed the dark-mode separation check.
+ *
+ * Dark is a selected set stepped for the dark surface, not an automatic flip.
+ * On light, aqua, yellow and magenta sit below 3:1 against the surface, so every
+ * chart also ships a table view — that is the required relief, not a nicety.
+ */
+:root {
+  /* The page plane sits one step below the card surface, in both modes. */
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --text: #0b0b0b;
+  --line: rgba(11, 11, 11, 0.1);
+  --accent: #0b0b0b;
+  --on-accent: #fcfcfb;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s5: #e87ba4;
+
+  /* Sequential blue, light → dark. One hue; magnitude is lightness. */
+  --heat-0: #eeeeea;
+  --heat-1: #b7d3f6;
+  --heat-2: #6da7ec;
+  --heat-3: #2a78d6;
+  --heat-4: #184f95;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --text: #ffffff;
+    --line: rgba(255, 255, 255, 0.12);
+    --accent: #fcfcfb;
+    --on-accent: #0b0b0b;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --axis: #383835;
+
+    --s1: #3987e5;
+    --s2: #d95926;
+    --s3: #199e70;
+    --s4: #c98500;
+    --s5: #d55181;
+
+    --heat-0: #232322;
+    --heat-1: #184f95;
+    --heat-2: #256abf;
+    --heat-3: #3987e5;
+    --heat-4: #86b6ef;
+  }
 }
 
 html {
@@ -11,7 +70,11 @@ html {
 }
 
 body {
-  @apply bg-paper text-ink antialiased;
+  /* One switch drives the whole app. Flipping only the chart tokens left dark
+     heatmap cells on a white page, which reads worse than no dark mode at all. */
+  background: var(--page);
+  color: var(--text);
   margin: 0;
   overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
 }

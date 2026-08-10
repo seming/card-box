@@ -52,7 +52,7 @@ export default function TodayPage() {
           No decks yet. Create one in Manage to get started — importing a file arrives in a later
           stage.
         </p>
-        <Link to="/manage" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
+        <Link to="/manage" className="inline-block rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--on-accent)]">
           Go to Manage
         </Link>
       </section>
@@ -71,7 +71,7 @@ export default function TodayPage() {
       {total > 0 && (
         <Link
           to="/review"
-          className="block rounded-lg bg-black py-4 text-center text-lg font-medium text-white"
+          className="block rounded-lg bg-[var(--accent)] py-4 text-center text-lg font-medium text-[var(--on-accent)]"
         >
           Start reviewing
         </Link>
@@ -84,7 +84,7 @@ export default function TodayPage() {
           version made those inert, which read as a broken tap: the row was
           visibly there and pressing it did nothing at all. The review screen
           already explains an empty queue, so let it. */}
-      <ul className="divide-y divide-black/10 rounded-lg border border-black/10">
+      <ul className="divide-y divide-[var(--line)] rounded-lg border border-[var(--line)]">
         {rows.map((row) => {
           const due = row.counts.total > 0
           const capped = row.counts.unseen > 0 && row.counts.new === 0
@@ -133,7 +133,7 @@ export default function TodayPage() {
             <li key={row.id}>
               <Link
                 to={`/review/${row.id}`}
-                className={`block px-4 py-3 active:bg-black/5 ${due ? '' : 'opacity-70'}`}
+                className={`block px-4 py-3 active:bg-[var(--line)] ${due ? '' : 'opacity-70'}`}
               >
                 {body}
               </Link>

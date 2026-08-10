@@ -172,5 +172,5 @@ export type Settings = z.infer<typeof SettingsSchema>
 
 export const DEFAULT_SETTINGS: Settings = SettingsSchema.parse({})
 
-/** Cards per `cards-NNN.json`. See HANDOFF §8 — this is an estimate, not a measurement. */
+/** Cards per `cards-NNN.json`. See HANDOFF §9 — this is an estimate, not a measurement. */
 export const CHUNK_SIZE = 500

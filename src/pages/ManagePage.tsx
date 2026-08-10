@@ -128,7 +128,7 @@ export default function ManagePage() {
       {/* Minimal settings until stage 5 builds the real screen. The burying
           switches ship off, matching Anki — but a deck of reverse cards needs
           "new" on, so there has to be a way to turn it on. */}
-      <section className="space-y-3 rounded-lg border border-black/10 p-4 text-sm">
+      <section className="space-y-3 rounded-lg border border-[var(--line)] p-4 text-sm">
         <h2 className="font-medium">Settings</h2>
 
         <div className="space-y-2">
@@ -160,7 +160,7 @@ export default function ManagePage() {
             <input
               type="number"
               min={0}
-              className="w-20 rounded border border-black/20 px-2 py-1"
+              className="w-20 rounded border border-[var(--line)] px-2 py-1"
               value={settings.newPerDay}
               onChange={(e) => void saveSettings({ newPerDay: Math.max(0, Number(e.target.value)) })}
             />
@@ -170,7 +170,7 @@ export default function ManagePage() {
             <input
               type="number"
               min={0}
-              className="w-20 rounded border border-black/20 px-2 py-1"
+              className="w-20 rounded border border-[var(--line)] px-2 py-1"
               value={settings.reviewsPerDay}
               onChange={(e) =>
                 void saveSettings({ reviewsPerDay: Math.max(0, Number(e.target.value)) })
@@ -180,7 +180,7 @@ export default function ManagePage() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-black/10 p-4 text-sm space-y-1">
+      <section className="rounded-lg border border-[var(--line)] p-4 text-sm space-y-1">
         <h2 className="font-medium">Study day</h2>
         <p>
           Now <code>{now.toLocaleString()}</code>
@@ -198,13 +198,13 @@ export default function ManagePage() {
         <h2 className="font-medium">Decks</h2>
         <div className="flex gap-2">
           <input
-            className="flex-1 rounded border border-black/20 px-3 py-2"
+            className="flex-1 rounded border border-[var(--line)] px-3 py-2"
             placeholder="New deck name"
             value={deckName}
             onChange={(e) => setDeckName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void addDeck()}
           />
-          <button className="rounded bg-black px-4 py-2 text-white" onClick={() => void addDeck()}>
+          <button className="rounded bg-[var(--accent)] px-4 py-2 text-[var(--on-accent)]" onClick={() => void addDeck()}>
             Add
           </button>
         </div>
@@ -212,7 +212,7 @@ export default function ManagePage() {
         {decks.length === 0 ? (
           <p className="text-sm opacity-60">No decks yet.</p>
         ) : (
-          <ul className="divide-y divide-black/10 rounded border border-black/10">
+          <ul className="divide-y divide-[var(--line)] rounded border border-[var(--line)]">
             {decks.map((d) => (
               <li key={d.id} className="flex items-center gap-3 px-3 py-2">
                 <button
@@ -244,25 +244,25 @@ export default function ManagePage() {
 
           <div className="flex gap-2">
             <input
-              className="flex-1 rounded border border-black/20 px-3 py-2"
+              className="flex-1 rounded border border-[var(--line)] px-3 py-2"
               placeholder="Front"
               value={front}
               onChange={(e) => setFront(e.target.value)}
             />
             <input
-              className="flex-1 rounded border border-black/20 px-3 py-2"
+              className="flex-1 rounded border border-[var(--line)] px-3 py-2"
               placeholder="Back"
               value={back}
               onChange={(e) => setBack(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && void addCard()}
             />
-            <button className="rounded bg-black px-4 py-2 text-white" onClick={() => void addCard()}>
+            <button className="rounded bg-[var(--accent)] px-4 py-2 text-[var(--on-accent)]" onClick={() => void addCard()}>
               Add
             </button>
           </div>
 
           <div className="flex gap-2 text-sm">
-            <button className="rounded border border-black/20 px-3 py-1" onClick={() => void seed(600)}>
+            <button className="rounded border border-[var(--line)] px-3 py-1" onClick={() => void seed(600)}>
               Seed 600 (crosses a chunk)
             </button>
           </div>
@@ -270,7 +270,7 @@ export default function ManagePage() {
           {cards.length === 0 ? (
             <p className="text-sm opacity-60">No cards in this deck.</p>
           ) : (
-            <ul className="divide-y divide-black/10 rounded border border-black/10">
+            <ul className="divide-y divide-[var(--line)] rounded border border-[var(--line)]">
               {cards.slice(0, 50).map((c) => (
                 <li key={c.id} className="flex items-center gap-3 px-3 py-2 text-sm">
                   <span className="flex-1">

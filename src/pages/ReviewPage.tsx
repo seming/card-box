@@ -127,7 +127,7 @@ export default function ReviewPage() {
       <section className="space-y-4 text-center">
         <h1 className="text-2xl font-semibold">Could not open this deck</h1>
         <p className="text-sm opacity-60">{loadError}</p>
-        <Link to="/" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
+        <Link to="/" className="inline-block rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--on-accent)]">
           Back to Today
         </Link>
       </section>
@@ -169,13 +169,13 @@ export default function ReviewPage() {
         <div className="flex justify-center gap-2">
           {undoable > 0 && (
             <button
-              className="rounded border border-black/20 px-4 py-2 text-sm"
+              className="rounded border border-[var(--line)] px-4 py-2 text-sm"
               onClick={() => void takeBack()}
             >
               Undo last answer
             </button>
           )}
-          <Link to="/" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
+          <Link to="/" className="inline-block rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--on-accent)]">
             Back to Today
           </Link>
         </div>
@@ -189,8 +189,8 @@ export default function ReviewPage() {
   return (
     <section className="flex flex-1 flex-col">
       <div className="mb-6 flex items-center gap-3 text-xs opacity-60">
-        <div className="h-1 flex-1 overflow-hidden rounded-full bg-black/10">
-          <div className="h-full bg-black/50 transition-all" style={{ width: `${progress * 100}%` }} />
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-[var(--line)]">
+          <div className="h-full bg-[var(--line)]0 transition-all" style={{ width: `${progress * 100}%` }} />
         </div>
         <span className="tabular-nums">{remaining} left</span>
         {undoable > 0 && (
@@ -208,14 +208,14 @@ export default function ReviewPage() {
         <p className="text-3xl font-medium leading-snug">{current.front}</p>
 
         {revealed && (
-          <div className="w-full space-y-3 border-t border-black/10 pt-6">
+          <div className="w-full space-y-3 border-t border-[var(--line)] pt-6">
             <p className="text-2xl">{current.back}</p>
             {current.example && <p className="text-base opacity-70">{current.example}</p>}
             {current.note && <p className="text-sm opacity-50">{current.note}</p>}
             {current.tags.length > 0 && (
               <div className="flex flex-wrap justify-center gap-1.5 pt-1">
                 {current.tags.map((t) => (
-                  <span key={t} className="rounded-full bg-black/5 px-2 py-0.5 text-xs opacity-60">
+                  <span key={t} className="rounded-full bg-[var(--line)] px-2 py-0.5 text-xs opacity-60">
                     {t}
                   </span>
                 ))}
@@ -229,7 +229,7 @@ export default function ReviewPage() {
       <div className="mt-8">
         {!revealed ? (
           <button
-            className="w-full rounded-lg bg-black py-4 text-lg font-medium text-white"
+            className="w-full rounded-lg bg-[var(--accent)] py-4 text-lg font-medium text-[var(--on-accent)]"
             onClick={() => setRevealed(true)}
           >
             Show answer
