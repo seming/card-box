@@ -49,12 +49,20 @@ export default function TodayPage() {
       <section className="space-y-4">
         <h1 className="text-2xl font-semibold">Today</h1>
         <p className="text-sm opacity-60">
-          No decks yet. Create one in Manage to get started — importing a file arrives in a later
-          stage.
+          No cards yet. Import a CSV, TSV or Excel file — the sheet, header row and columns are
+          detected for you.
         </p>
-        <Link to="/manage" className="inline-block rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--on-accent)]">
-          Go to Manage
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            to="/import"
+            className="inline-block rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--on-accent)]"
+          >
+            Import a file
+          </Link>
+          <Link to="/manage" className="inline-block rounded border border-[var(--line)] px-4 py-2 text-sm">
+            Add by hand
+          </Link>
+        </div>
       </section>
     )
   }
