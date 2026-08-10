@@ -176,6 +176,33 @@ Not implemented yet — stage 5, the hardest one. Design is settled:
 
 Bulk loading an existing collection goes through `scripts/import-csv.mjs` and a single git commit, not through the app — 20 sequential PUTs from a phone can be interrupted halfway.
 
+### Sync has to be visible, not trusted
+
+Automatic sync that cannot be observed is worse than manual sync, because a silent
+failure looks exactly like success. The rule: **syncing may succeed quietly; it may never
+fail quietly.**
+
+Required, not optional:
+
+- **A persistent status in the header**, never behind a menu. `Synced 2 min ago`,
+  `Syncing…`, `3 changes pending`, `Offline — 5 pending`, `Token expired — update in
+  settings`.
+- **A pending count as a number.** "3 changes pending" is checkable; "sync may be delayed"
+  is not. Zero means everything is up.
+- **A manual button.** It creates no trust by itself — pressing it proves nothing about
+  the outcome — but it is the escape hatch for the automatic triggers iOS misses, since
+  apps there are swiped away rather than closed.
+- **Loud failures that name the remedy.** An expired token discovered weeks later is the
+  worst case; the error table above exists for this.
+
+The strongest guarantee sits outside the app: every sync is a git commit, so github.com
+shows what changed and when, per card, whether or not the app is telling the truth.
+AnkiWeb has no equivalent.
+
+Losing data is not among the failure modes. An answer reaches IndexedDB before any upload
+is attempted, so uploading only ever copies what is already safe. Sync failing for a month
+means the other device is stale, not that reviews are gone.
+
 ---
 
 ## 6. Import
