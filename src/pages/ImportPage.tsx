@@ -12,6 +12,8 @@ import { buildCards, dedupeKey, guessMapping, headerLabels } from '#src/lib/impo
 import type { ColumnMapping, DuplicateMode } from '#src/lib/import.ts'
 import { getCardsByDeck, nextChunk, putCards, putDeck } from '#src/lib/idb.ts'
 import { useStore } from '#src/store/useStore.ts'
+import { SAMPLE_DECKS, fetchSample } from '#src/lib/samples.ts'
+import type { SampleDeck } from '#src/lib/samples.ts'
 
 /**
  * Import: file or paste → choose sheet and header → map columns → preview → go.
@@ -32,7 +34,7 @@ const FIELDS = [
 
 export default function ImportPage() {
   const navigate = useNavigate()
-  const { decks, refreshDecks } = useStore()
+  const { decks, refreshDecks, settings, saveSettings } = useStore()
   const fileInput = useRef<HTMLInputElement>(null)
 
   const [source, setSource] = useState<Source>(null)
@@ -106,6 +108,25 @@ export default function ImportPage() {
     } catch (e) {
       setSource(null)
       setError(e instanceof Error ? e.message : 'Could not read that file.')
+    }
+  }
+
+  async function loadSample(deck: SampleDeck) {
+    try {
+      const text = await fetchSample(deck)
+      setFileName(deck.name)
+      setPasted('')
+      const d = detectDelimiter(text)
+      setDelimiter(d)
+      // Same path a chosen file takes, so the preview and the count on the
+      // button are the real ones — then the known column layout is applied.
+      adopt({ kind: 'rows', rows: parseCsv(text, d) })
+      setMapping(deck.mapping)
+      setLang(deck.lang)
+      setReverse(deck.reverse)
+      setDeckName(deck.name)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not load that deck.')
     }
   }
 
@@ -203,7 +224,25 @@ export default function ImportPage() {
         <p className="text-sm opacity-60">CSV, TSV or Excel (.xlsx).</p>
       </header>
 
+      <div className="space-y-2">
+        <h2 className="text-sm font-medium">Start from a bundled deck</h2>
+        {SAMPLE_DECKS.map((deck) => (
+          <button
+            key={deck.id}
+            className="w-full rounded-lg border border-[var(--line)] p-3 text-left"
+            onClick={() => void loadSample(deck)}
+          >
+            <span className="flex items-baseline justify-between gap-2">
+              <span className="font-medium">{deck.name}</span>
+              <span className="shrink-0 text-xs opacity-50">{deck.cards} entries</span>
+            </span>
+            <span className="mt-0.5 block text-xs opacity-60">{deck.description}</span>
+          </button>
+        ))}
+      </div>
+
       <div className="space-y-3">
+        <h2 className="text-sm font-medium">Or bring your own</h2>
         <input
           ref={fileInput}
           type="file"
@@ -382,6 +421,20 @@ export default function ImportPage() {
                 </span>
               </span>
             </label>
+
+            {reverse && !settings.buryNew && (
+              <p className="rounded bg-[var(--line)] p-2.5 text-xs">
+                Reverse cards are on but sibling burying is off, so both directions of a word can
+                come up the same day — and the second one is a copying exercise.{' '}
+                <button
+                  className="underline underline-offset-2"
+                  onClick={() => void saveSettings({ buryNew: true })}
+                >
+                  Turn on burying
+                </button>
+                .
+              </p>
+            )}
 
             <label className="flex items-center gap-3">
               <span className="w-20 shrink-0 opacity-60">Duplicates</span>

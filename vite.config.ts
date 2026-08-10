@@ -40,7 +40,8 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // csv is here so the bundled decks work on a phone that has never been online.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2,csv}'],
         // Every route is the same shell; the router reads the path at runtime.
         navigateFallback: `${BASE}index.html`,
       },

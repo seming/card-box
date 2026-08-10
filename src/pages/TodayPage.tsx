@@ -49,15 +49,15 @@ export default function TodayPage() {
       <section className="space-y-4">
         <h1 className="text-2xl font-semibold">Today</h1>
         <p className="text-sm opacity-60">
-          No cards yet. Import a CSV, TSV or Excel file — the sheet, header row and columns are
-          detected for you.
+          No cards yet. Start from a bundled German B1 deck, or import your own CSV, TSV or
+          Excel file — the sheet, header row and columns are detected for you.
         </p>
         <div className="flex gap-2">
           <Link
             to="/import"
             className="inline-block rounded bg-[var(--accent)] px-4 py-2 text-sm text-[var(--on-accent)]"
           >
-            Import a file
+            Get a deck
           </Link>
           <Link to="/manage" className="inline-block rounded border border-[var(--line)] px-4 py-2 text-sm">
             Add by hand

@@ -1,0 +1,83 @@
+german,korean,english,example,tags,lang
+"die Bewerbung / die Bewerbungen","지원서, 지원","application (for a job)","Ich habe meine Bewerbung gestern abgeschickt.","noun work",de-DE
+"der Lebenslauf / die Lebensläufe","이력서","CV, résumé","Bitte schicken Sie uns Ihren Lebenslauf per E-Mail.","noun work",de-DE
+"das Vorstellungsgespräch / die Vorstellungsgespräche","면접","job interview","Das Vorstellungsgespräch dauerte fast eine Stunde.","noun work",de-DE
+"die Erfahrung / die Erfahrungen","경험","experience","Für diese Stelle braucht man mehrere Jahre Erfahrung.","noun work",de-DE
+"die Ausbildung / die Ausbildungen","직업 교육, 양성 과정","vocational training","Nach der Schule hat er eine Ausbildung als Koch gemacht.","noun work",de-DE
+"der Arbeitgeber / die Arbeitgeber","고용주","employer","Mein Arbeitgeber zahlt die Hälfte der Fahrkarte.","noun work",de-DE
+"der Arbeitnehmer / die Arbeitnehmer","근로자, 피고용인","employee","Die Arbeitnehmer haben ein Recht auf Urlaub.","noun work",de-DE
+"das Gehalt / die Gehälter","급여","salary","Sie verdient ein gutes Gehalt, arbeitet aber sehr viel.","noun work",de-DE
+"die Kündigung / die Kündigungen","해고 통지, 사직 통보","notice of termination","Er hat die Kündigung zum Monatsende bekommen.","noun work",de-DE
+"die Stelle / die Stellen","일자리","job, position","Ich suche eine Stelle in einem kleinen Betrieb.","noun work",de-DE
+"die Miete / die Mieten","월세","rent","Die Miete ist in den letzten Jahren stark gestiegen.","noun housing",de-DE
+"der Vermieter / die Vermieter","집주인, 임대인","landlord","Der Vermieter hat den Vertrag nicht verlängert.","noun housing",de-DE
+"die Nebenkosten (nur Plural)","관리비, 부대비용","utilities, additional costs","Die Nebenkosten sind in der Miete nicht enthalten.","noun housing",de-DE
+"der Vertrag / die Verträge","계약서","contract","Lesen Sie den Vertrag genau, bevor Sie unterschreiben.","noun housing",de-DE
+"die Wohnung / die Wohnungen","집, 아파트","flat, apartment","Wir haben endlich eine bezahlbare Wohnung gefunden.","noun housing",de-DE
+"die Umgebung / die Umgebungen","주변, 근교","surroundings, area","Die Umgebung ist ruhig und sehr grün.","noun housing",de-DE
+"die Umwelt (nur Singular)","환경","environment","Wir müssen die Umwelt für die nächsten Generationen schützen.","noun environment",de-DE
+"der Klimawandel (nur Singular)","기후 변화","climate change","Der Klimawandel betrifft alle Länder.","noun environment",de-DE
+"die Verschmutzung (nur Singular)","오염","pollution","Die Verschmutzung der Flüsse ist ein großes Problem.","noun environment",de-DE
+"der Abfall / die Abfälle","쓰레기, 폐기물","waste, rubbish","Den Abfall trennen wir in Papier, Glas und Plastik.","noun environment",de-DE
+"die Gesundheit (nur Singular)","건강","health","Rauchen schadet der Gesundheit.","noun health",de-DE
+"die Behandlung / die Behandlungen","치료","treatment","Die Behandlung dauert etwa drei Wochen.","noun health",de-DE
+"der Termin / die Termine","예약, 약속","appointment","Ich habe morgen einen Termin beim Zahnarzt.","noun health",de-DE
+"die Krankenkasse / die Krankenkassen","건강보험조합","health insurance fund","Die Krankenkasse übernimmt die Kosten nicht.","noun health",de-DE
+"die Beschwerde / die Beschwerden","불편, 증상, 민원","complaint, ailment","Seit einer Woche habe ich Beschwerden im Rücken.","noun health",de-DE
+"die Versicherung / die Versicherungen","보험","insurance","Ohne Versicherung darf man nicht Auto fahren.","noun money",de-DE
+"die Rechnung / die Rechnungen","계산서, 청구서","bill, invoice","Die Rechnung muss bis Freitag bezahlt werden.","noun money",de-DE
+"die Nachricht / die Nachrichten","소식, 메시지","news, message","Ich habe dir eine Nachricht auf dem Handy hinterlassen.","noun media",de-DE
+"die Werbung (meist Singular)","광고","advertising","Im Fernsehen kommt viel zu viel Werbung.","noun media",de-DE
+"die Sendung / die Sendungen","방송 프로그램","broadcast, programme","Diese Sendung läuft jeden Donnerstag um acht.","noun media",de-DE
+"die Meinung / die Meinungen","의견","opinion","Meiner Meinung nach ist das keine gute Idee.","noun opinion",de-DE
+"der Vorschlag / die Vorschläge","제안","suggestion, proposal","Dein Vorschlag klingt vernünftig.","noun opinion",de-DE
+"die Entscheidung / die Entscheidungen","결정","decision","Das war die schwerste Entscheidung meines Lebens.","noun opinion",de-DE
+"die Möglichkeit / die Möglichkeiten","가능성, 방법","possibility, option","Es gibt noch eine andere Möglichkeit.","noun opinion",de-DE
+"der Vorteil / die Vorteile","장점","advantage","Der größte Vorteil ist die kurze Fahrzeit.","noun opinion",de-DE
+"der Nachteil / die Nachteile","단점","disadvantage","Der Nachteil ist, dass es ziemlich teuer ist.","noun opinion",de-DE
+"die Voraussetzung / die Voraussetzungen","전제 조건","prerequisite, requirement","Gute Deutschkenntnisse sind eine Voraussetzung für das Studium.","noun study",de-DE
+"die Prüfung / die Prüfungen","시험","exam","Ich muss die Prüfung im Herbst wiederholen.","noun study",de-DE
+"die Verspätung / die Verspätungen","연착, 지연","delay","Der Zug hatte über eine Stunde Verspätung.","noun travel",de-DE
+"die Unterkunft / die Unterkünfte","숙소","accommodation","Wir suchen noch eine günstige Unterkunft für zwei Nächte.","noun travel",de-DE
+"die Sehenswürdigkeit / die Sehenswürdigkeiten","명소, 볼거리","sight, attraction","In Wien gibt es viele Sehenswürdigkeiten.","noun travel",de-DE
+"der Ausflug / die Ausflüge","소풍, 나들이","excursion, trip","Am Sonntag machen wir einen Ausflug an den See.","noun travel",de-DE
+"sich bewerben (bewirbt, bewarb, hat beworben)","지원하다","to apply (for a job)","Ich bewerbe mich um eine Stelle als Ingenieur.","verb work",de-DE
+"teilnehmen (nimmt teil, nahm teil, hat teilgenommen)","참가하다","to take part","An dem Kurs nehmen zwanzig Personen teil.","verb study",de-DE
+"sich beschweren (beschwerte, hat beschwert)","항의하다, 불평하다","to complain","Die Nachbarn haben sich über den Lärm beschwert.","verb opinion",de-DE
+"sich kümmern um (kümmerte, hat gekümmert)","돌보다, 신경 쓰다","to take care of","Wer kümmert sich am Wochenende um den Hund?","verb daily",de-DE
+"vermeiden (vermied, hat vermieden)","피하다","to avoid","Wir sollten unnötige Diskussionen vermeiden.","verb opinion",de-DE
+"erlauben (erlaubte, hat erlaubt)","허락하다","to allow","Meine Eltern haben mir erlaubt, allein zu reisen.","verb daily",de-DE
+"verbieten (verbot, hat verboten)","금지하다","to forbid","Hier ist das Parken verboten.","verb daily",de-DE
+"empfehlen (empfiehlt, empfahl, hat empfohlen)","추천하다","to recommend","Können Sie mir ein gutes Restaurant empfehlen?","verb daily",de-DE
+"verlangen (verlangte, hat verlangt)","요구하다","to demand","Der Chef verlangt zu viel von seinen Mitarbeitern.","verb work",de-DE
+"erledigen (erledigte, hat erledigt)","처리하다, 끝내다","to deal with, get done","Ich muss heute noch ein paar Dinge erledigen.","verb work",de-DE
+"sich gewöhnen an (gewöhnte, hat gewöhnt)","익숙해지다","to get used to","An das Wetter hier habe ich mich nie gewöhnt.","verb daily",de-DE
+"verzichten auf (verzichtete, hat verzichtet)","포기하다, 단념하다","to do without","Ich verzichte auf Zucker im Kaffee.","verb health",de-DE
+"beschließen (beschloss, hat beschlossen)","결정하다","to decide","Sie hat beschlossen, ins Ausland zu gehen.","verb opinion",de-DE
+"entwickeln (entwickelte, hat entwickelt)","개발하다, 발전시키다","to develop","Die Firma entwickelt eine neue Software.","verb work",de-DE
+"unterstützen (unterstützte, hat unterstützt)","지원하다, 후원하다","to support","Meine Familie hat mich immer unterstützt.","verb daily",de-DE
+"erreichen (erreichte, hat erreicht)","도달하다, 연락이 닿다","to reach, achieve","Unter dieser Nummer erreichen Sie mich den ganzen Tag.","verb daily",de-DE
+"vergleichen (verglich, hat verglichen)","비교하다","to compare","Vergleichen Sie die Preise, bevor Sie kaufen.","verb opinion",de-DE
+"behaupten (behauptete, hat behauptet)","주장하다","to claim, assert","Er behauptet, er habe nichts davon gewusst.","verb opinion",de-DE
+"sich verlassen auf (verließ, hat verlassen)","믿다, 의지하다","to rely on","Auf ihn kann man sich hundertprozentig verlassen.","verb opinion",de-DE
+"aufgeben (gibt auf, gab auf, hat aufgegeben)","포기하다","to give up","Gib nicht auf, du bist fast fertig!","verb daily",de-DE
+"sich vorstellen (stellte vor, hat vorgestellt)","상상하다, 소개하다","to imagine; to introduce oneself","Ich kann mir nicht vorstellen, dort zu leben.","verb daily",de-DE
+"zuverlässig","믿을 수 있는, 성실한","reliable","Sie ist eine sehr zuverlässige Kollegin.","adjective work",de-DE
+"selbstständig","자립적인, 자영업의","independent, self-employed","Seit zwei Jahren arbeitet er selbstständig.","adjective work",de-DE
+"anstrengend","힘든, 고된","exhausting, strenuous","Der Tag war lang und anstrengend.","adjective daily",de-DE
+"günstig","저렴한, 유리한","cheap, favourable","Ich habe ein günstiges Ticket gefunden.","adjective money",de-DE
+"dringend","긴급한","urgent","Ich brauche dringend deine Hilfe.","adjective daily",de-DE
+"deutlich","분명한, 뚜렷한","clear, distinct","Bitte sprechen Sie etwas deutlicher.","adjective opinion",de-DE
+"ausreichend","충분한","sufficient","Das Geld ist für die Reise nicht ausreichend.","adjective money",de-DE
+"zufrieden mit","만족한","satisfied with","Ich bin mit dem Ergebnis sehr zufrieden.","adjective opinion",de-DE
+"neugierig auf","궁금한, 호기심 있는","curious about","Ich bin neugierig auf seine Antwort.","adjective opinion",de-DE
+"obwohl","~임에도 불구하고 (종속접속사, 동사 후치)","although","Obwohl es regnete, sind wir spazieren gegangen.","connector grammar",de-DE
+"trotzdem","그럼에도 불구하고 (부사, 동사 도치)","nevertheless","Es regnete. Trotzdem sind wir spazieren gegangen.","connector grammar",de-DE
+"deshalb","그래서 (부사, 동사 도치)","therefore","Er war krank, deshalb ist er nicht gekommen.","connector grammar",de-DE
+"falls","만약 ~라면 (종속접속사)","in case, if","Falls du Zeit hast, ruf mich bitte an.","connector grammar",de-DE
+"damit","~하기 위해 (주어가 다를 때)","so that","Ich schreibe es auf, damit du es nicht vergisst.","connector grammar",de-DE
+"sobald","~하자마자 (종속접속사)","as soon as","Sobald ich angekommen bin, melde ich mich.","connector grammar",de-DE
+"während","~하는 동안; 반면에","while, whereas","Während ich kochte, hat er den Tisch gedeckt.","connector grammar",de-DE
+"außerdem","게다가","besides, moreover","Die Wohnung ist klein. Außerdem ist sie zu teuer.","connector grammar",de-DE
+"jedoch","그러나","however","Der Plan war gut, jedoch fehlte das Geld.","connector grammar",de-DE
+"entweder ... oder","~이거나 ~이거나","either ... or","Wir fahren entweder nach Wien oder nach Prag.","connector grammar",de-DE

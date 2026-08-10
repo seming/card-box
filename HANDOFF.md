@@ -280,6 +280,20 @@ elements may carry a namespace prefix (this file uses `<x:row>`, not `<row>`) an
 attributes appear in no fixed order. This file also has an *empty* shared-string table and
 puts its text in `t="str"` cells instead.
 
+### Bundled decks
+
+`public/decks/*.csv`, listed in `lib/samples.ts` with their column layout already worked
+out. Tapping one runs the same path a chosen file takes — the preview, the mapping and the
+count on the button are all real — and then applies the known mapping.
+
+They sit in `public/` rather than being bundled into the JavaScript: nothing to download
+for anyone who never loads one, and `csv` is in the workbox glob so a phone that has never
+been online still has them.
+
+This exists for the first five minutes on a phone. Getting an xlsx into the iOS Files app
+is the most annoying step in the product, and it sits between a new install and finding out
+whether the app is any good.
+
 **Cards are generated in both directions** by default. The reverse card is tagged
 `reverse` so it can be found later without touching the originals.
 
