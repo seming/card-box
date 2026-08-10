@@ -181,6 +181,15 @@ export async function getReviewsBetween(from: string, to: string): Promise<Revie
   return (await db()).getAllFromIndex('reviews', 'review', IDBKeyRange.bound(from, to, false, true))
 }
 
+/**
+ * Removes a log entry. The only caller is undo, and only for an answer given in
+ * this session — the log is otherwise append-only, because it is the input to
+ * parameter optimization and the daily counts.
+ */
+export async function deleteReview(id: string): Promise<void> {
+  await (await db()).delete('reviews', id)
+}
+
 export async function countReviews(): Promise<number> {
   return (await db()).count('reviews')
 }

@@ -50,6 +50,36 @@ function mulberry32(seed: number): () => number {
 const live = (c: Card) => !c.deleted
 
 /**
+ * The note a card belongs to. Cards created before notes existed have no
+ * `noteId` and stand alone, which is the correct fallback: nothing to bury.
+ */
+export const noteOf = (c: Card): string => c.noteId ?? c.id
+
+/**
+ * Notes whose other direction has already been answered today.
+ *
+ * Showing `das Skigebiet → 스키장` and then `스키장 → das Skigebiet` an hour later
+ * is not two reviews; the second one is a copying exercise. Anki calls this
+ * burying siblings and does it by default, and the reverse cards this app
+ * generates make it necessary rather than optional.
+ *
+ * Derived from the log rather than stored, like the daily limits — so it needs
+ * no state of its own and survives a sync without merge rules.
+ */
+function buriedNotes(cards: Card[], todayLog: ReviewLogEntry[]): Map<string, Set<string>> {
+  const noteByCard = new Map(cards.map((c) => [c.id, noteOf(c)]))
+  const answered = new Map<string, Set<string>>()
+  for (const entry of todayLog) {
+    const note = noteByCard.get(entry.cardId)
+    if (note === undefined) continue
+    const seen = answered.get(note)
+    if (seen) seen.add(entry.cardId)
+    else answered.set(note, new Set([entry.cardId]))
+  }
+  return answered
+}
+
+/**
  * How much of today's allowance is left, for one deck or across all of them.
  *
  * Counted from the review log rather than a stored counter: the log syncs, so
@@ -88,7 +118,12 @@ export function todaysReviews(log: ReviewLogEntry[], now: Date, settings: Settin
   return log.filter((e) => e.review >= from && e.review < to)
 }
 
-function partition(cards: Card[], now: Date, settings: Settings) {
+function partition(
+  cards: Card[],
+  now: Date,
+  settings: Settings,
+  answeredNotes: Map<string, Set<string>>,
+) {
   const nowIso = now.toISOString()
   const endIso = dayEnd(now, settings.dayStartHour).toISOString()
 
@@ -97,8 +132,21 @@ function partition(cards: Card[], now: Date, settings: Settings) {
   const fresh: Card[] = []
   let unseen = 0
 
+  // One card per note per session, so a queue cannot contain both directions.
+  const claimed = new Set<string>()
+
   for (const card of cards) {
     if (!live(card)) continue
+
+    if (settings.burySiblings) {
+      const sameNote = answeredNotes.get(noteOf(card))
+      // Buried only by a *sibling*. A learning card that comes back within its
+      // own steps must still appear, so a card is never buried by itself.
+      if (sameNote && !sameNote.has(card.id)) continue
+      if (claimed.has(noteOf(card))) continue
+      claimed.add(noteOf(card))
+    }
+
     const { state, due } = card.fsrs
 
     if (state === State.New) {
@@ -168,7 +216,12 @@ function deckQueue(
   rand: () => number,
 ): { learning: Card[]; rest: Card[] } {
   const { todayLog, settings, now } = input
-  const { learning, review, fresh } = partition(cards, now, settings)
+  const { learning, review, fresh } = partition(
+    cards,
+    now,
+    settings,
+    buriedNotes(cards, todayLog),
+  )
   const { newLeft, reviewLeft } = remainingToday(todayLog, settings, deckId)
 
   learning.sort((a, b) => a.fsrs.due.localeCompare(b.fsrs.due))
@@ -212,7 +265,12 @@ export function queueCounts(input: QueueInput): QueueCounts {
   const counts: QueueCounts = { learning: 0, review: 0, new: 0, unseen: 0, total: 0 }
 
   for (const [deckId, cards] of byDeck(input.cards)) {
-    const { learning, review, fresh, unseen } = partition(cards, now, settings)
+    const { learning, review, fresh, unseen } = partition(
+      cards,
+      now,
+      settings,
+      buriedNotes(cards, todayLog),
+    )
     const { newLeft, reviewLeft } = remainingToday(todayLog, settings, deckId)
 
     counts.learning += learning.length

@@ -5,6 +5,7 @@ import { dayEnd, dayStart } from '#src/lib/day.ts'
 import {
   appendReviews,
   countCards,
+  deleteReview,
   getCardsByDeck,
   getDecks,
   getReviewsBetween,
@@ -32,8 +33,26 @@ interface State {
   refreshDecks: () => Promise<void>
   loadDeckCards: (deckId: string) => Promise<Card[]>
   /** Persists the answered card and its log entry, and keeps `todayLog` current. */
-  recordAnswer: (card: Card, log: ReviewLogEntry) => Promise<void>
+  recordAnswer: (previous: Card, card: Card, log: ReviewLogEntry) => Promise<void>
+  /**
+   * Takes back the last answer: restores the card as it was and drops the log
+   * entry. Returns the restored card so the reviewer can refresh in place, or
+   * null when there is nothing to undo.
+   *
+   * Session-scoped by design. Undoing an answer from yesterday would mean
+   * rewriting history that has already synced, and a mis-tap is a
+   * within-the-minute mistake.
+   */
+  undo: () => Promise<Card | null>
+  canUndo: () => boolean
 }
+
+interface UndoStep {
+  previous: Card
+  logId: string
+}
+
+const undoStack: UndoStep[] = []
 
 export const useStore = create<State>((set, get) => ({
   settings: DEFAULT_SETTINGS,
@@ -63,9 +82,21 @@ export const useStore = create<State>((set, get) => ({
     return getCardsByDeck(deckId)
   },
 
-  async recordAnswer(card, log) {
+  async recordAnswer(previous, card, log) {
     await putCard(card)
     await appendReviews([log])
+    undoStack.push({ previous, logId: log.id })
     set({ todayLog: [...get().todayLog, log] })
+  },
+
+  canUndo: () => undoStack.length > 0,
+
+  async undo() {
+    const step = undoStack.pop()
+    if (!step) return null
+    await putCard(step.previous)
+    await deleteReview(step.logId)
+    set({ todayLog: get().todayLog.filter((e) => e.id !== step.logId) })
+    return step.previous
   },
 }))

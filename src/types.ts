@@ -44,6 +44,16 @@ export const CardSchema = z.object({
   id: z.string().min(1),
   deckId: z.string().min(1),
   /**
+   * The note this card belongs to. The two directions of one word share it,
+   * which is what lets the queue hold a sibling back so both do not turn up in
+   * the same session — being shown the answer minutes before the question is
+   * not a review.
+   *
+   * Optional: cards created before notes existed fall back to their own id and
+   * behave as a note of one.
+   */
+  noteId: z.string().min(1).optional(),
+  /**
    * Which `cards-NNN.json` file this card lives in. Assigned once at creation
    * and never recomputed — deriving it from a hash would re-shuffle every card
    * the moment the chunk size changed.
@@ -133,6 +143,8 @@ export const SettingsSchema = z.object({
   learningSteps: z.array(stepSchema).default(['1m', '10m']),
   relearningSteps: z.array(stepSchema).default(['10m']),
   newPerDay: z.number().int().nonnegative().default(20),
+  /** Hold the other direction of a word until the next day, as Anki does. */
+  burySiblings: z.boolean().default(true),
   reviewsPerDay: z.number().int().nonnegative().default(200),
   dayStartHour: z.number().int().min(0).max(23).default(4),
   /** Optimized FSRS weights. Empty until the optimizer has been run; see PRD §5. */

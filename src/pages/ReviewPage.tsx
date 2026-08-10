@@ -17,13 +17,14 @@ const GRADE_STYLE: Record<GradeValue, string> = {
 
 export default function ReviewPage() {
   const { deckId } = useParams()
-  const { settings, todayLog, recordAnswer } = useStore()
+  const { settings, todayLog, recordAnswer, undo } = useStore()
 
   const [cards, setCards] = useState<Card[] | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [revealed, setRevealed] = useState(false)
   const [tick, setTick] = useState(0)
   const [done, setDone] = useState(0)
+  const [undoable, setUndoable] = useState(0)
   const shownAt = useRef(new Date())
 
   // Fixed for the session so the queue does not reshuffle under the reviewer
@@ -80,12 +81,27 @@ export default function ReviewPage() {
       if (!current || !revealed) return
       const now = new Date()
       const result = answer(current, grade, now, shownAt.current, settings)
-      await recordAnswer(result.card, result.log)
+      await recordAnswer(current, result.card, result.log)
       setCards((prev) => prev?.map((c) => (c.id === result.card.id ? result.card : c)) ?? null)
       setDone((n) => n + 1)
+      setUndoable((n) => n + 1)
     },
     [current, revealed, settings, recordAnswer],
   )
+
+  /**
+   * Takes back the last answer. A mis-tap on Easy otherwise hides the card for
+   * days, and on a phone mis-taps are the common mistake, not typos.
+   */
+  const takeBack = useCallback(async () => {
+    const restored = await undo()
+    if (!restored) return
+    setCards((prev) => prev?.map((c) => (c.id === restored.id ? restored : c)) ?? null)
+    setDone((n) => Math.max(0, n - 1))
+    setUndoable((n) => Math.max(0, n - 1))
+    // Show it answered-side-up: undo is followed by re-rating, not re-reading.
+    setRevealed(true)
+  }, [undo])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -94,12 +110,17 @@ export default function ReviewPage() {
         if (!revealed) setRevealed(true)
         return
       }
+      if (e.key === 'z' || e.key === 'Z') {
+        e.preventDefault()
+        void takeBack()
+        return
+      }
       const n = Number(e.key)
       if (revealed && n >= 1 && n <= 4) void rate(n as GradeValue)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [revealed, rate])
+  }, [revealed, rate, takeBack])
 
   if (loadError) {
     return (
@@ -145,9 +166,19 @@ export default function ReviewPage() {
           <p className="text-sm opacity-60">This deck has no cards yet.</p>
         )}
 
-        <Link to="/" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
-          Back to Today
-        </Link>
+        <div className="flex justify-center gap-2">
+          {undoable > 0 && (
+            <button
+              className="rounded border border-black/20 px-4 py-2 text-sm"
+              onClick={() => void takeBack()}
+            >
+              Undo last answer
+            </button>
+          )}
+          <Link to="/" className="inline-block rounded bg-black px-4 py-2 text-sm text-white">
+            Back to Today
+          </Link>
+        </div>
       </section>
     )
   }
@@ -162,6 +193,15 @@ export default function ReviewPage() {
           <div className="h-full bg-black/50 transition-all" style={{ width: `${progress * 100}%` }} />
         </div>
         <span className="tabular-nums">{remaining} left</span>
+        {undoable > 0 && (
+          <button
+            className="rounded px-2 py-1 underline underline-offset-2 hover:opacity-100"
+            onClick={() => void takeBack()}
+            title="Undo the last answer (z)"
+          >
+            Undo
+          </button>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
@@ -212,7 +252,7 @@ export default function ReviewPage() {
           </div>
         )}
         <p className="mt-3 hidden text-center text-xs opacity-40 sm:block">
-          space to reveal · 1–4 to rate
+          space to reveal · 1–4 to rate · z to undo
         </p>
       </div>
     </section>

@@ -109,8 +109,11 @@ export function buildCards(rows: string[][], options: ImportOptions, deps: Deps)
     const example = cell(row, mapping.example) || undefined
     const note = cell(row, mapping.note) || undefined
 
+    // Both directions belong to one note, so the queue can keep them apart.
+    const noteId = deps.newId()
     const make = (f: string, b: string, extra: string[]): Card => ({
       id: deps.newId(),
+      noteId,
       deckId: deps.deckId,
       chunk: takeChunk(),
       front: f,

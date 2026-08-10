@@ -6,6 +6,7 @@ import {
   remainingToday,
   todaysReviews,
   nextDue,
+  noteOf,
 } from '../src/lib/queue.ts'
 import { State, Rating, SettingsSchema } from '../src/types.ts'
 
@@ -419,5 +420,108 @@ describe('daily limits are per deck', () => {
       card(State.Learning, at(2026, 8, 8, 11), { deckId: 'B', id: 'learn' }),
     ]
     assert.equal(buildQueue(input(cards, now)).map((c) => c.id)[0], 'learn')
+  })
+})
+
+
+describe('burying siblings', () => {
+  // The two directions of one word share a noteId. Seeing the answer an hour
+  // before the question is not a review, so only one direction runs per day.
+  const now = at(2026, 8, 8, 12, 0)
+
+  const pair = (noteId, extra = {}) => [
+    card(State.New, now, { noteId, id: `${noteId}-fwd`, ...extra }),
+    card(State.New, now, { noteId, id: `${noteId}-rev`, ...extra }),
+  ]
+
+  test('noteOf falls back to the card id when there is no note', () => {
+    const lone = card(State.New, now, { id: 'solo' })
+    assert.equal(noteOf(lone), 'solo')
+    assert.equal(noteOf(card(State.New, now, { id: 'x', noteId: 'n1' })), 'n1')
+  })
+
+  test('only one direction of a word enters the queue', () => {
+    const queue = buildQueue(input(pair('n1'), now))
+    assert.equal(queue.length, 1)
+  })
+
+  test('ten words yield ten cards, not twenty', () => {
+    const cards = Array.from({ length: 10 }, (_, i) => pair(`n${i}`)).flat()
+    assert.equal(cards.length, 20)
+    assert.equal(buildQueue(input(cards, now)).length, 10)
+  })
+
+  test('answering one direction buries the other for the rest of the day', () => {
+    // Realistic state: answering the forward card moved it to Learning with a
+    // due time later today, so it is out of the queue on its own. The question
+    // is only whether the mirror steps in to replace it. It must not.
+    const cards = [
+      card(State.Learning, at(2026, 8, 8, 12, 10), { noteId: 'n1', id: 'n1-fwd' }),
+      card(State.New, now, { noteId: 'n1', id: 'n1-rev' }),
+    ]
+    const log = [{ ...logEntry(State.New, at(2026, 8, 8, 11, 59)), cardId: 'n1-fwd' }]
+    assert.deepEqual(buildQueue(input(cards, now, log)).map((c) => c.id), [])
+  })
+
+  test('the answered card returns when its own step comes due', () => {
+    const cards = [
+      card(State.Learning, at(2026, 8, 8, 11, 55), { noteId: 'n1', id: 'n1-fwd' }),
+      card(State.New, now, { noteId: 'n1', id: 'n1-rev' }),
+    ]
+    const log = [{ ...logEntry(State.New, at(2026, 8, 8, 11, 45)), cardId: 'n1-fwd' }]
+    // The forward card is due again; the mirror stays buried behind it.
+    assert.deepEqual(buildQueue(input(cards, now, log)).map((c) => c.id), ['n1-fwd'])
+  })
+
+  test('a learning card still returns within its own steps', () => {
+    // Buried by a sibling, never by itself — otherwise 'Again' would drop the
+    // card out of the session entirely.
+    const c = card(State.Learning, at(2026, 8, 8, 11, 55), { noteId: 'n1', id: 'n1-fwd' })
+    const log = [{ ...logEntry(State.Learning, at(2026, 8, 8, 11, 50)), cardId: 'n1-fwd' }]
+    assert.equal(buildQueue(input([c], now, log)).length, 1)
+  })
+
+  test('the sibling comes back the next day', () => {
+    const cards = pair('n1')
+    const yesterday = [{ ...logEntry(State.New, at(2026, 8, 7, 10)), cardId: 'n1-fwd' }]
+    const tomorrow = at(2026, 8, 9, 12, 0)
+    // The caller scopes the log to the current study day; yesterday's is gone.
+    assert.equal(buildQueue(input(cards, tomorrow, todaysReviews(yesterday, tomorrow, settings))).length, 1)
+  })
+
+  test('unrelated cards are untouched', () => {
+    const cards = [...pair('n1'), card(State.New, now, { noteId: 'n2', id: 'other' })]
+    const ids = buildQueue(input(cards, now)).map((c) => c.id)
+    assert.equal(ids.length, 2)
+    assert.ok(ids.includes('other'))
+  })
+
+  test('counts agree with the queue', () => {
+    const cards = Array.from({ length: 10 }, (_, i) => pair(`n${i}`)).flat()
+    assert.equal(queueCounts(input(cards, now)).total, buildQueue(input(cards, now)).length)
+  })
+
+  test('unseen counts words, not sides, once burying is on', () => {
+    const cards = Array.from({ length: 10 }, (_, i) => pair(`n${i}`)).flat()
+    assert.equal(queueCounts(input(cards, now)).unseen, 10)
+  })
+
+  test('turning it off shows both directions', () => {
+    const cards = pair('n1')
+    assert.equal(buildQueue(input(cards, now, [], { burySiblings: false })).length, 2)
+  })
+
+  test('cards without a noteId are never buried by each other', () => {
+    // Legacy cards stand alone; two of them must not suppress one another.
+    const cards = [card(State.New, now, { id: 'a' }), card(State.New, now, { id: 'b' })]
+    assert.equal(buildQueue(input(cards, now)).length, 2)
+  })
+
+  test('burying does not leak across decks', () => {
+    const cards = [
+      card(State.New, now, { noteId: 'n1', id: 'A-fwd', deckId: 'A' }),
+      card(State.New, now, { noteId: 'n1', id: 'B-fwd', deckId: 'B' }),
+    ]
+    assert.equal(buildQueue(input(cards, now)).length, 2)
   })
 })

@@ -5,7 +5,7 @@ Read this file first in a new session.
 | | |
 |---|---|
 | **Last updated** | 2026-08-10 |
-| **Stage** | 4 of 7 — importing and reviewing both work. Stage 3 (deck screens) deferred; stage 5 (sync) is next |
+| **Stage** | Importing and reviewing work, with sibling burying and undo. Deployment (6) is next; deck screens (3) and sync (5) after |
 | **Product spec** | [`prd-cardbox.md`](prd-cardbox.md) — what and why. This file is how. |
 | **Repository** | `seming/card-box` (public). Data repo for stage 5 not created yet. |
 | **Deployment** | Not yet. GitHub Pages wiring is stage 6, at `https://seming.github.io/card-box/`. |
@@ -62,7 +62,7 @@ cardbox/
 │   └── goethe-b1-starter.csv    82 entries written from scratch, a starting point
 └── tests/
     ├── day.test.mjs      ✅ 20 tests
-    ├── queue.test.mjs    ✅ 33 tests
+    ├── queue.test.mjs    ✅ 52 tests — order, limits, burying
     ├── csv.test.mjs      ✅ 29 tests
     ├── xlsx.test.mjs     ✅ 15 tests
     └── import.test.mjs   ✅ 36 tests
@@ -87,6 +87,10 @@ it, so the pure modules were unreachable from tests.
   would produce. Space reveals, 1–4 rate.
 - **Review logging** with `duration`, from which the daily limits are derived.
 - Today screen with per-deck learning/review/new counts and a backlog warning.
+- **Sibling burying**: the two directions of a word share a `noteId`, and only one of
+  them runs per day.
+- **Undo** (`z`, or the button): restores the card exactly as it was and drops the log
+  entry.
 - **Import** from CSV, TSV or .xlsx: sheet chooser, header-row chooser, column mapping,
   live preview, reverse-card generation, duplicate handling, chunk continuation.
 
@@ -148,6 +152,37 @@ fsrs(generatorParameters({
 `ts-fsrs` implements learning steps itself (`FSRSParameters.learning_steps`, `Card.learning_steps`), so do not write step logic. `next()` returns minute-level `due` values directly.
 
 **Order:** learning/relearning cards with `due <= now` first; then review cards due before tomorrow's 04:00, earliest first with a random tiebreak; then new cards in creation order. Reviews and new cards are **interleaved**, matching Anki's "mix with reviews".
+
+### Siblings
+
+The two cards of a word share `noteId`, set at import. A note yields at most one card per
+session, and answering one direction holds the other back until the next study day.
+
+Without this, reverse cards are close to useless: being shown `das Skigebiet → 스키장` and
+then `스키장 → das Skigebiet` an hour later is a copying exercise, not a review. Anki calls
+this burying siblings and has it on by default; generating reverse cards makes it required
+rather than nice to have.
+
+Derived from the review log, like the daily limits — no stored bury state, nothing extra
+to merge on sync. **A card is never buried by itself**, only by a sibling, or a lapsed card
+would drop out of its own learning steps.
+
+`noteId` is optional on the schema. Cards created before notes existed fall back to their
+own id and behave as a note of one, so nothing needs migrating — but a deck imported
+before this change has unpaired directions and should be re-imported to gain them.
+
+Switch: `settings.burySiblings`, default on.
+
+### Undo
+
+`recordAnswer` keeps the pre-answer card, and `undo` writes it back and deletes the log
+entry. `deleteReview` exists for this and has no other caller — the log is otherwise
+append-only.
+
+The stack is session-scoped and in memory. Undoing an answer from yesterday would mean
+rewriting history that has already synced, and the mistake this addresses is a mis-tap,
+noticed within seconds. On a phone mis-taps are the common error, not typos: a stray Easy
+otherwise hides the card for a week.
 
 **Daily limits are per deck**, as they are in Anki, and derived from the review log rather
 than a stored counter — count today's entries for that deck with `state === New` and
