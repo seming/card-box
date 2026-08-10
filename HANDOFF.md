@@ -8,7 +8,7 @@ Read this file first in a new session.
 | **Stage** | Reviewing, importing and statistics all work. Deployment (6) is next; deck screens (3) and sync (5) after |
 | **Product spec** | [`prd-cardbox.md`](prd-cardbox.md) — what and why. This file is how. |
 | **Repository** | `seming/card-box` (public). Data repo for stage 5 not created yet. |
-| **Deployment** | Not yet. GitHub Pages wiring is stage 6, at `https://seming.github.io/card-box/`. |
+| **Deployment** | `https://seming.github.io/card-box/` — every push to `main` publishes. |
 
 ---
 
@@ -360,6 +360,30 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
 
 ---
 
+## 8.1 Deployment
+
+Push to `main`; `.github/workflows/deploy.yml` runs `npm ci`, `npm run check`, `npm run
+build` and publishes `dist/`. About a minute. Nothing ships past a failing test.
+
+The repository's **Pages source must be set to "GitHub Actions"** in Settings → Pages. The
+default is "Deploy from a branch", under which the workflow runs and publishes nothing.
+
+**`404.html` is a copy of `index.html`,** made in the build script. Pages has no SPA
+history fallback, so a hard refresh on `/card-box/review/<id>` asks for a file that does
+not exist. Serving the shell as the 404 body lets the app boot and the router read the
+path. The status code stays 404; the page works.
+
+**The service worker is why iOS storage survives.** Safari erases script-writable storage
+for a site untouched for seven days, and a home-screen web app is exempt — so installing is
+not a nicety, it is what keeps months of review history from expiring on a timer. Verified
+against the production build: with the network fully cut the app cold-starts, a deep link
+resolves, and a review session runs.
+
+Icons are rendered from `public/icon.svg` by a throwaway CDP script. Chrome's plain
+`--screenshot` flag hangs on this machine; driving it over the DevTools protocol does not.
+
+---
+
 ## 9. Gotchas
 
 - **`State` and `Rating` values are load-bearing.** `types.ts` defines them as `as const` objects whose values match both `ts-fsrs`'s enums and the FSRS optimizer's `review_state` / `review_rating` columns. That alignment is why the review log exports with no translation table. Do not renumber. `Rating.Manual = 0` must be filtered out on export.
@@ -419,7 +443,7 @@ Browser-level CRUD is driven over the DevTools Protocol with no dependencies —
 - [x] **Stage 4** — `csv.ts`, `xlsx.ts`, `import.ts`, ImportPage. Done ahead of stage 3 so the real deck could be loaded. `scripts/import-csv.mjs` moved to stage 5 — see §6
 - [ ] **Stage 5** — `github.ts`, `merge.ts`, `sync.ts`, `scripts/import-csv.mjs`, SettingsPage. `merge.test.mjs`, then the real two-device divergence run
 - [x] **Statistics** — `stats.ts`, `charts.tsx`, StatsPage. Done before deployment on request
-- [ ] **Stage 6** — PWA, icons, GitHub Actions deploy, iPhone home screen
+- [x] **Stage 6** — PWA, icons, 404 fallback, GitHub Actions deploy
 - [ ] **Stage 7** — reconcile this file against the code
 
 `ManagePage.tsx` is the stage-1 harness under a new name. Stage 3 replaces it; do not build on it.
