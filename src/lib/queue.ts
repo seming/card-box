@@ -49,6 +49,12 @@ function mulberry32(seed: number): () => number {
 
 const live = (c: Card) => !c.deleted
 
+/** Suspended forever, or buried until a moment that has not arrived. */
+export function isHeld(c: Card, now: Date): boolean {
+  if (c.suspended) return true
+  return c.buriedUntil !== undefined && c.buriedUntil > now.toISOString()
+}
+
 /**
  * The note a card belongs to. Cards created before notes existed have no
  * `noteId` and stand alone, which is the correct fallback: nothing to bury.
@@ -139,6 +145,9 @@ function partition(
 
   for (const card of cards) {
     if (!live(card)) continue
+    // Suspended and buried cards leave the queue entirely, and do not consume a
+    // daily allowance — the same way Anki treats them.
+    if (isHeld(card, now)) continue
 
     const { state, due } = card.fsrs
 
@@ -303,7 +312,7 @@ export function nextDue(cards: Card[], now: Date): Date | null {
   const nowIso = now.toISOString()
   let soonest: string | null = null
   for (const card of cards) {
-    if (!live(card) || card.fsrs.state === State.New) continue
+    if (!live(card) || isHeld(card, now) || card.fsrs.state === State.New) continue
     if (card.fsrs.due <= nowIso) return now
     if (soonest === null || card.fsrs.due < soonest) soonest = card.fsrs.due
   }

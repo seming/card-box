@@ -283,6 +283,7 @@ export default function StatsPage() {
               ['Relearning', counts.relearning],
               ['Young', counts.young],
               ['Mature', counts.mature],
+              ['Suspended', counts.suspended],
             ]}
           />
         }
@@ -294,6 +295,7 @@ export default function StatsPage() {
             { key: 'relearning', label: 'Relearning', color: BUCKET_COLOR.relearning, value: counts.relearning },
             { key: 'young', label: 'Young', color: BUCKET_COLOR.young, value: counts.young },
             { key: 'mature', label: 'Mature', color: BUCKET_COLOR.mature, value: counts.mature },
+            { key: 'suspended', label: 'Suspended', color: 'var(--axis)', value: counts.suspended },
           ]}
         />
       </Card>

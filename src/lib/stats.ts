@@ -19,12 +19,15 @@ import { dayEnd, dayKey, dayStart, daysBetween } from '#src/lib/day.ts'
 /** Anki's young/mature boundary, in days. */
 export const MATURE_DAYS = 21
 
-export type Bucket = 'new' | 'learning' | 'relearning' | 'young' | 'mature'
+export type Bucket = 'new' | 'learning' | 'relearning' | 'young' | 'mature' | 'suspended'
 
 const live = (c: Card) => !c.deleted
 const passed = (e: ReviewLogEntry) => e.rating !== Rating.Again
 
 export function bucketOf(card: Card): Bucket {
+  // Suspension outranks the scheduling state: a suspended mature card is out of
+  // rotation, and counting it as mature would overstate what is in play.
+  if (card.suspended) return 'suspended'
   const { state, scheduled_days } = card.fsrs
   if (state === State.New) return 'new'
   if (state === State.Learning) return 'learning'
@@ -172,7 +175,7 @@ export function futureDue(
   }))
 
   for (const card of cards) {
-    if (!live(card) || card.fsrs.state === State.New) continue
+    if (!live(card) || card.suspended || card.fsrs.state === State.New) continue
     // Anything already due lands on today rather than in the past.
     const offset = Math.max(0, daysBetween(now, new Date(card.fsrs.due), settings.dayStartHour))
     if (offset > span) continue
@@ -265,6 +268,7 @@ export function cardCounts(cards: Card[]): CardCounts {
     relearning: 0,
     young: 0,
     mature: 0,
+    suspended: 0,
     total: 0,
   }
   for (const card of cards) {
@@ -316,7 +320,7 @@ const dayLabel = (a: number, b: number): string =>
 /** Current intervals, in days. New cards have none and are excluded. */
 export function intervalHistogram(cards: Card[]): Bin[] {
   const values = cards
-    .filter((c) => live(c) && c.fsrs.state !== State.New)
+    .filter((c) => live(c) && !c.suspended && c.fsrs.state !== State.New)
     .map((c) => c.fsrs.scheduled_days)
   return histogram(values, [0, 1, 2, 3, 4, 7, 14, 21, 30, 60, 90, 180, 365], dayLabel)
 }
@@ -324,7 +328,7 @@ export function intervalHistogram(cards: Card[]): Bin[] {
 /** FSRS stability: days for recall probability to fall to 90%. */
 export function stabilityHistogram(cards: Card[]): Bin[] {
   const values = cards
-    .filter((c) => live(c) && c.fsrs.state !== State.New)
+    .filter((c) => live(c) && !c.suspended && c.fsrs.state !== State.New)
     .map((c) => c.fsrs.stability)
   return histogram(values, [0, 1, 2, 3, 4, 7, 14, 21, 30, 60, 90, 180, 365], dayLabel)
 }
@@ -332,7 +336,7 @@ export function stabilityHistogram(cards: Card[]): Bin[] {
 /** FSRS difficulty, 1–10. Higher means intervals grow more slowly. */
 export function difficultyHistogram(cards: Card[]): Bin[] {
   const values = cards
-    .filter((c) => live(c) && c.fsrs.state !== State.New)
+    .filter((c) => live(c) && !c.suspended && c.fsrs.state !== State.New)
     .map((c) => c.fsrs.difficulty)
   return histogram(
     values,
@@ -353,7 +357,7 @@ export function retrievabilityHistogram(
   probability: (card: Card) => number,
 ): Bin[] {
   const values = cards
-    .filter((c) => live(c) && c.fsrs.state !== State.New)
+    .filter((c) => live(c) && !c.suspended && c.fsrs.state !== State.New)
     .map((c) => Math.round(probability(c) * 100))
   // Last edge is 90, so the top bin is 90–100% inclusive. Ending the edges at
   // 100 instead would create a bin holding only the single value 100.
@@ -367,7 +371,7 @@ export function retrievabilityHistogram(
 /** Expected number still remembered — the sum of per-card recall probabilities. */
 export function expectedRetained(cards: Card[], probability: (card: Card) => number): number {
   return cards
-    .filter((c) => live(c) && c.fsrs.state !== State.New)
+    .filter((c) => live(c) && !c.suspended && c.fsrs.state !== State.New)
     .reduce((sum, c) => sum + probability(c), 0)
 }
 

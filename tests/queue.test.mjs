@@ -7,6 +7,7 @@ import {
   todaysReviews,
   nextDue,
   noteOf,
+  isHeld,
 } from '../src/lib/queue.ts'
 import { State, Rating, SettingsSchema } from '../src/types.ts'
 
@@ -531,5 +532,78 @@ describe('burying siblings — Anki semantics', () => {
       card(State.New, now, { noteId: 'n1', id: 'B-fwd', deckId: 'B' }),
     ]
     assert.equal(buildQueue(input(cards, now, [], ON)).length, 2)
+  })
+})
+
+
+describe('suspended and buried cards', () => {
+  const now = at(2026, 8, 8, 12, 0)
+  const iso = (d) => d.toISOString()
+
+  test('isHeld reads both fields', () => {
+    assert.equal(isHeld(card(State.New, now), now), false)
+    assert.equal(isHeld(card(State.New, now, { suspended: true }), now), true)
+    assert.equal(isHeld(card(State.New, now, { buriedUntil: iso(at(2026, 8, 9, 4)) }), now), true)
+  })
+
+  test('a bury in the past no longer holds', () => {
+    assert.equal(isHeld(card(State.New, now, { buriedUntil: iso(at(2026, 8, 8, 4)) }), now), false)
+  })
+
+  test('suspended cards leave the queue', () => {
+    const cards = [
+      card(State.New, now, { id: 'kept' }),
+      card(State.New, now, { id: 'gone', suspended: true }),
+    ]
+    assert.deepEqual(buildQueue(input(cards, now)).map((c) => c.id), ['kept'])
+  })
+
+  test('buried cards leave the queue until their moment passes', () => {
+    const cards = [card(State.New, now, { id: 'later', buriedUntil: iso(at(2026, 8, 9, 4)) })]
+    assert.equal(buildQueue(input(cards, now)).length, 0)
+    assert.equal(buildQueue(input(cards, at(2026, 8, 9, 12))).length, 1)
+  })
+
+  test('a suspended review card is held even when overdue', () => {
+    const cards = [card(State.Review, at(2026, 8, 1, 6), { suspended: true })]
+    assert.equal(buildQueue(input(cards, now)).length, 0)
+  })
+
+  test('held cards do not consume the daily allowance', () => {
+    // Twenty suspended new cards must not eat the day's twenty slots.
+    const cards = [
+      ...Array.from({ length: 20 }, () => card(State.New, now, { suspended: true })),
+      ...Array.from({ length: 5 }, (_, i) => card(State.New, now, { id: `live${i}` })),
+    ]
+    assert.equal(buildQueue(input(cards, now)).length, 5)
+    assert.equal(queueCounts(input(cards, now)).new, 5)
+  })
+
+  test('counts and queue agree', () => {
+    const cards = [
+      card(State.New, now),
+      card(State.New, now, { suspended: true }),
+      card(State.Review, at(2026, 8, 8, 6), { buriedUntil: iso(at(2026, 8, 9, 4)) }),
+    ]
+    assert.equal(queueCounts(input(cards, now)).total, buildQueue(input(cards, now)).length)
+  })
+
+  test('nextDue ignores held cards', () => {
+    const cards = [
+      card(State.Review, at(2026, 8, 12, 6), { suspended: true }),
+      card(State.Review, at(2026, 8, 15, 6), { id: 'real' }),
+    ]
+    assert.deepEqual(nextDue(cards, now), at(2026, 8, 15, 6))
+  })
+
+  test('suspending one direction leaves the other studiable', () => {
+    const cards = [
+      card(State.New, now, { noteId: 'n1', id: 'fwd', suspended: true }),
+      card(State.New, now, { noteId: 'n1', id: 'rev' }),
+    ]
+    assert.deepEqual(
+      buildQueue(input(cards, now, [], { buryNew: true })).map((c) => c.id),
+      ['rev'],
+    )
   })
 })

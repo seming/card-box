@@ -5,7 +5,7 @@ Read this file first in a new session.
 | | |
 |---|---|
 | **Last updated** | 2026-08-10 |
-| **Stage** | Reviewing, importing and statistics all work. Deployment (6) is next; deck screens (3) and sync (5) after |
+| **Stage** | Everything but sync. Reviewing, importing, statistics, browsing, deployment. Stage 5 (sync) is what is left |
 | **Product spec** | [`prd-cardbox.md`](prd-cardbox.md) — what and why. This file is how. |
 | **Repository** | `seming/card-box` (public). Data repo for stage 5 not created yet. |
 | **Deployment** | `https://seming.github.io/card-box/` — every push to `main` publishes. |
@@ -47,15 +47,18 @@ cardbox/
 │   │   ├── scheduler.ts  ✅ the only file that imports ts-fsrs
 │   │   ├── queue.ts      ✅ pure — order, daily limits, interleaving
 │   │   ├── stats.ts      ✅ pure — retention, forecasts, distributions
+│   │   ├── search.ts     ✅ pure — a subset of Anki's browser syntax
 │   │   ├── csv.ts        ✅ pure — CSV/TSV, delimiter and header detection
 │   │   ├── xlsx.ts       ✅ pure — .xlsx via fflate, no DOMParser
 │   │   └── import.ts     ✅ pure — rows → cards, reverse, dedupe, chunks
-│   ├── components/charts.tsx  SVG primitives; no chart library
+│   ├── components/charts.tsx      SVG primitives; no chart library
+│   ├── components/CardEditor.tsx  one card, as a sheet — browser and review share it
 │   ├── store/useStore.ts ✅ zustand: settings, decks, today's log
 │   └── pages/
 │       ├── AppShell.tsx  bottom tabs, safe-area aware
 │       ├── TodayPage.tsx per-deck counts, backlog warning
 │       ├── ReviewPage.tsx ✅ the review loop
+│       ├── BrowsePage.tsx ✅ virtualised list, search, suspend, bury
 │       ├── StatsPage.tsx ✅ Anki's statistics, minus Card Ease
 │       ├── ImportPage.tsx ✅ file or paste → sheet → header → mapping → preview
 │       └── ManagePage.tsx ★ stage-1 harness — replaced in stage 3
@@ -65,7 +68,7 @@ cardbox/
 │   └── goethe-b1-starter.csv    82 entries written from scratch, a starting point
 └── tests/
     ├── day.test.mjs      ✅ 20 tests
-    ├── queue.test.mjs    ✅ 55 tests — order, limits, burying
+    ├── queue.test.mjs    ✅ 64 tests — order, limits, burying, holds
     ├── csv.test.mjs      ✅ 29 tests
     ├── xlsx.test.mjs     ✅ 15 tests
     └── import.test.mjs   ✅ 36 tests
@@ -373,6 +376,40 @@ injected function and `stats.ts` stays runnable under `node --test`.
 - Dark mode is a **selected** set of steps for the dark surface, not an inverted light one,
   and `index.css` drives the whole app from it. Theming only the charts left dark heatmap
   cells sitting on a white page, which reads worse than no dark mode at all.
+
+---
+
+## 7.2 Browsing, suspend and bury
+
+`search.ts` implements a subset of Anki's browser syntax — bare words match text, `tag:`,
+`is:`, `prop:`, `deck:`, `-` negates, quotes group. Terms are ANDed. Pure and unit-tested,
+because a query that quietly matches the wrong rows looks exactly like one that works.
+
+Two new card fields, and they are not the same thing:
+
+| Field | Meaning |
+|---|---|
+| `suspended` | out of rotation until put back, indefinitely |
+| `buriedUntil` | held until an instant, then returns on its own |
+
+Neither loses scheduling, and **neither consumes a daily allowance** — twenty suspended new
+cards must not eat the day's twenty slots. Sibling burying stays derived from the log and
+stores nothing; a *manual* bury has nowhere else to live, hence the field.
+
+Suspension outranks the scheduling state in `bucketOf`, so a suspended mature card counts
+as suspended rather than overstating what is in play. The distributions and the forecast
+exclude suspended cards for the same reason.
+
+Two things the list got wrong first, both worth keeping in mind:
+
+- **The virtualiser needs a scroll container with a definite height.** Under `flex-1`
+  inside a page that only sets `min-height`, it had none, reported the full list, and
+  rendered all 1,250 rows — virtualisation present and doing nothing. It now has an
+  explicit height.
+- **Stored order is meaningless.** Ids are uuids and a bulk import stamps one `createdAt`
+  on every card, so `getAllFromIndex` returns effectively random order. The list sorts by
+  front. Reverse cards therefore lead in a Korean deck, which is what the "Forward only"
+  filter is for.
 
 ---
 

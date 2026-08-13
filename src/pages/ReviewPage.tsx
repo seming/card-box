@@ -4,7 +4,10 @@ import type { Card } from '#src/types.ts'
 import { buildQueue, nextDue, queueCounts, remainingToday } from '#src/lib/queue.ts'
 import { answer, formatInterval, preview, GRADES, GRADE_LABEL } from '#src/lib/scheduler.ts'
 import type { GradeValue } from '#src/lib/scheduler.ts'
-import { getAllCards, getCardsByDeck } from '#src/lib/idb.ts'
+import { getAllCards, getCardsByDeck, putCard } from '#src/lib/idb.ts'
+import { nowIso } from '#src/lib/id.ts'
+import { dayEnd } from '#src/lib/day.ts'
+import CardEditor from '#src/components/CardEditor.tsx'
 import { useStore } from '#src/store/useStore.ts'
 
 /** Colour per rating. Again is the only one that has to stand out. */
@@ -25,6 +28,7 @@ export default function ReviewPage() {
   const [tick, setTick] = useState(0)
   const [done, setDone] = useState(0)
   const [undoable, setUndoable] = useState(0)
+  const [editing, setEditing] = useState(false)
   const shownAt = useRef(new Date())
 
   // Fixed for the session so the queue does not reshuffle under the reviewer
@@ -103,8 +107,31 @@ export default function ReviewPage() {
     setRevealed(true)
   }, [undo])
 
+  /** Writes a card and swaps it into the session in place. */
+  const patch = useCallback(async (next: Card) => {
+    await putCard(next)
+    setCards((prev) => prev?.map((c) => (c.id === next.id ? next : c)) ?? null)
+  }, [])
+
+  const suspendCurrent = useCallback(async () => {
+    if (!current) return
+    await patch({ ...current, suspended: true, updatedAt: nowIso() })
+    setEditing(false)
+  }, [current, patch])
+
+  const buryCurrent = useCallback(async () => {
+    if (!current) return
+    await patch({
+      ...current,
+      buriedUntil: dayEnd(new Date(), settings.dayStartHour).toISOString(),
+      updatedAt: nowIso(),
+    })
+    setEditing(false)
+  }, [current, patch, settings.dayStartHour])
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      if (editing) return
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
         if (!revealed) setRevealed(true)
@@ -120,7 +147,7 @@ export default function ReviewPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [revealed, rate, takeBack])
+  }, [revealed, rate, takeBack, editing])
 
   if (loadError) {
     return (
@@ -202,6 +229,13 @@ export default function ReviewPage() {
             Undo
           </button>
         )}
+        <button
+          className="rounded px-2 py-1 underline underline-offset-2 hover:opacity-100"
+          onClick={() => setEditing(true)}
+          title="Edit, suspend or bury this card"
+        >
+          Edit
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
@@ -255,6 +289,25 @@ export default function ReviewPage() {
           space to reveal · 1–4 to rate · z to undo
         </p>
       </div>
+
+      {/* Spotting a wrong meaning and not being able to fix it is the friction
+          this removes; suspend and bury ride along because the moment you want
+          them is the moment the card is in front of you. */}
+      {editing && current && (
+        <CardEditor
+          card={current}
+          onClose={() => setEditing(false)}
+          onSave={async (next) => {
+            await patch(next)
+          }}
+          onSuspend={() => suspendCurrent()}
+          onBury={() => buryCurrent()}
+          onDeleted={() => {
+            setEditing(false)
+            setCards((prev) => prev?.filter((c) => c.id !== current.id) ?? null)
+          }}
+        />
+      )}
     </section>
   )
 }

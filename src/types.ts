@@ -74,6 +74,19 @@ export const CardSchema = z.object({
   /** Merge key. On conflict the later `updatedAt` wins, per card. */
   updatedAt: isoDate,
   /**
+   * Taken out of rotation until explicitly restored. Survives forever, unlike
+   * burying — the card for a word you have decided not to learn, or one that is
+   * broken and not yet fixed.
+   */
+  suspended: z.boolean().optional(),
+  /**
+   * Held back until this instant, then returns on its own. Manual burying: "not
+   * this session". Sibling burying is derived from the log instead and stores
+   * nothing, but a manual choice has nowhere else to live.
+   */
+  buriedUntil: isoDate.optional(),
+
+  /**
    * Tombstone. Deleted cards are kept, not removed — otherwise a card deleted
    * on one device reappears the next time the other device syncs.
    */

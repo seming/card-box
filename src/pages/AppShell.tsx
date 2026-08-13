@@ -9,6 +9,7 @@ import { useStore } from '#src/store/useStore.ts'
 
 const TABS = [
   { to: '/', label: 'Today', end: true },
+  { to: '/browse', label: 'Browse', end: false },
   { to: '/stats', label: 'Stats', end: false },
   { to: '/import', label: 'Import', end: false },
   { to: '/manage', label: 'Manage', end: false },
