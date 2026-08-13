@@ -2,6 +2,9 @@ import { create } from 'zustand'
 import type { Card, Deck, ReviewLogEntry, Settings } from '#src/types.ts'
 import { DEFAULT_SETTINGS } from '#src/types.ts'
 import { dayEnd, dayStart } from '#src/lib/day.ts'
+import { describe as describeSyncError } from '#src/lib/github.ts'
+import { SyncError } from '#src/lib/github.ts'
+import { getRepoRef, getSyncState, pendingCount, sync as runSync } from '#src/lib/sync.ts'
 import {
   appendReviews,
   countCards,
@@ -47,6 +50,19 @@ interface State {
   undo: () => Promise<Card | null>
   canUndo: () => boolean
   saveSettings: (patch: Partial<Settings>) => Promise<void>
+
+  /** True once a token and repository are stored on this device. */
+  configured: boolean
+  sync: {
+    running: boolean
+    pending: number
+    lastSyncAt?: string
+    error?: string
+    errorKind?: string
+  }
+  syncNow: () => Promise<void>
+  refreshPending: () => Promise<void>
+  reloadConfig: () => void
 }
 
 interface UndoStep {
@@ -62,6 +78,8 @@ export const useStore = create<State>((set, get) => ({
   deckCounts: {},
   todayLog: [],
   ready: false,
+  configured: getRepoRef() !== null,
+  sync: { running: false, pending: 0 },
 
   async load() {
     const settings = await getSettings()
@@ -97,6 +115,40 @@ export const useStore = create<State>((set, get) => ({
     const settings = { ...get().settings, ...patch }
     await putSettings(settings)
     set({ settings })
+  },
+
+  reloadConfig() {
+    set({ configured: getRepoRef() !== null })
+  },
+
+  async refreshPending() {
+    if (!getRepoRef()) return
+    const [pending, state] = await Promise.all([pendingCount(), getSyncState()])
+    set({ sync: { ...get().sync, pending, lastSyncAt: state.lastSyncAt } })
+  },
+
+  async syncNow() {
+    if (get().sync.running || !getRepoRef()) return
+    set({ sync: { ...get().sync, running: true, error: undefined, errorKind: undefined } })
+    try {
+      await runSync()
+      // Everything may have moved underneath, so the whole session is reloaded
+      // rather than patched.
+      await get().load()
+      const state = await getSyncState()
+      set({
+        sync: { running: false, pending: await pendingCount(), lastSyncAt: state.lastSyncAt },
+      })
+    } catch (error) {
+      set({
+        sync: {
+          ...get().sync,
+          running: false,
+          error: describeSyncError(error),
+          errorKind: error instanceof SyncError ? error.kind : 'unknown',
+        },
+      })
+    }
   },
 
   async undo() {

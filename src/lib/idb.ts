@@ -75,6 +75,18 @@ export async function getDecks(): Promise<Deck[]> {
   return all.filter((d) => !d.deleted).sort((a, b) => a.name.localeCompare(b.name))
 }
 
+/** Every deck including tombstones. Sync needs the deletions; the UI does not. */
+export async function getDecksRaw(): Promise<Deck[]> {
+  return (await db()).getAll('decks')
+}
+
+export async function putDecks(decks: Deck[]): Promise<void> {
+  const database = await db()
+  const tx = database.transaction('decks', 'readwrite')
+  await Promise.all(decks.map((d) => tx.store.put(d)))
+  await tx.done
+}
+
 export async function getDeck(id: string): Promise<Deck | undefined> {
   return (await db()).get('decks', id)
 }
@@ -115,10 +127,15 @@ export async function getCardsByDeck(deckId: string): Promise<Card[]> {
   return all.filter((c) => !c.deleted)
 }
 
-/** Every live card, across decks. Backs a review session that spans all decks. */
-export async function getAllCards(): Promise<Card[]> {
+/**
+ * Every live card, across decks. Backs a review session that spans all decks.
+ *
+ * Sync passes `includeDeleted` — a tombstone dropped from a push would resurrect
+ * the card on the other device.
+ */
+export async function getAllCards(options?: { includeDeleted?: boolean }): Promise<Card[]> {
   const all = await (await db()).getAll('cards')
-  return all.filter((c) => !c.deleted)
+  return options?.includeDeleted ? all : all.filter((c) => !c.deleted)
 }
 
 export async function countCards(deckId: string): Promise<number> {
@@ -188,6 +205,11 @@ export async function getReviewsBetween(from: string, to: string): Promise<Revie
  */
 export async function deleteReview(id: string): Promise<void> {
   await (await db()).delete('reviews', id)
+}
+
+/** The whole log. It is append-only and small — a year of daily study is a few MB. */
+export async function getAllReviews(): Promise<ReviewLogEntry[]> {
+  return (await db()).getAll('reviews')
 }
 
 export async function countReviews(): Promise<number> {

@@ -5,6 +5,7 @@ import { newId, nowIso } from '#src/lib/id.ts'
 import { dayEnd, dayKey, dayStart } from '#src/lib/day.ts'
 import { emptyFsrs } from '#src/lib/scheduler.ts'
 import { useStore } from '#src/store/useStore.ts'
+import SyncSettings from '#src/components/SyncSettings.tsx'
 import {
   countCards,
   deleteCard,
@@ -125,9 +126,10 @@ export default function ManagePage() {
         </p>
       </header>
 
-      {/* Minimal settings until stage 5 builds the real screen. The burying
-          switches ship off, matching Anki — but a deck of reverse cards needs
-          "new" on, so there has to be a way to turn it on. */}
+      <SyncSettings />
+
+      {/* The burying switches ship off, matching Anki — but a deck of reverse
+          cards needs "new" on, so there has to be a way to turn it on. */}
       <section className="space-y-3 rounded-lg border border-[var(--line)] p-4 text-sm">
         <h2 className="font-medium">Settings</h2>
 

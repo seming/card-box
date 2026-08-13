@@ -221,17 +221,60 @@ every deck still come first, since they are mid-flight.
 
 ## 5. Sync
 
-Not implemented yet — stage 5, the hardest one. Design is settled:
+Shipped. `github.ts` (Contents API), `merge.ts` (pure, 32 tests), `sync.ts`
+(orchestration), `SyncSettings.tsx`, `SyncStatus.tsx`.
 
-- Read `GET /repos/{owner}/{repo}/contents/{path}` → base64 + `sha`; keep the sha locally.
-- Write `PUT` with `{ content, sha, message }`. A stale sha returns 409.
-- On 409: refetch the chunk, merge by card id taking the later `updatedAt` (per-card last-write-wins; tombstones win when later), retry up to three times.
-- Review logs merge as a union by id, and only ever in today's file.
-- **Write order is chunks → `meta.json` → `index.json`.** `meta.json` declares which chunks are valid, so writing it last means an interruption leaves undeclared orphan files that the next attempt overwrites. The reverse order points at files that do not exist.
-- Pull walks `index.json` → changed decks' `meta.json` → only chunks whose sha differs.
-- Bootstrap: an empty repo 404s on `index.json`; PUT `index.json` and `settings.json` with no sha to create them.
+- Read `GET /contents/{path}` → base64 + `sha`. Over 1MB the API stops inlining
+  content and returns metadata only, which `get()` turns into a `too-large` error.
+- Write `PUT` with `{ content, sha, message }`. A stale sha returns 409; `putWithRetry`
+  refetches and retries three times.
+- **Write order is chunks → `meta.json` → `index.json` → `settings.json`.** `meta.json`
+  declares which chunks are valid, so writing it after them means an interruption
+  leaves undeclared orphans that the next attempt overwrites. The reverse order
+  points at files that do not exist.
+- Bootstrap needs no special case: every GET returns null on 404 and every PUT
+  without a sha creates.
 
-Bulk loading an existing collection goes through `scripts/import-csv.mjs` and a single git commit, not through the app — 20 sequential PUTs from a phone can be interrupted halfway.
+### Merging
+
+Per record, by id, later `updatedAt` wins. Cards, decks and settings each have their
+own function; reviews are a union by id because a review is never edited.
+
+**Ties break on content, not on role.** "Remote wins on tie" sounds harmless and is
+not: whichever device syncs second calls the other one remote, so two devices settle
+on different answers and never converge. `mergeById` compares the serialized records
+and takes the larger string — arbitrary, but identical on both sides.
+
+Tombstones are ordinary edits. A delete is `deleted: true` with a fresh `updatedAt`,
+so it wins over an older edit and loses to a newer one. Deleting outright would let
+the other device resurrect the card on its next sync.
+
+Settings merge whole-object, so the newest device's settings replace the other's.
+`index.json` carries `settingsAt` for that comparison — **and it only moves when
+settings.json actually changes.** Stamping `now` every run made index.json differ on
+every sync, so an idle sync still produced a commit.
+
+### What is verified
+
+`tests/merge.test.mjs` (32) and `tests/github.test.mjs` (14) cover the pure parts.
+Above them, `drive14.mjs` stubs `api.github.com` with an in-memory store installed
+before app code runs, and wipes IndexedDB between phases to stand in for switching
+devices: device A imports 82 rows (164 cards), answers three, syncs; device B pulls,
+answers three others, syncs; device A pulls again. **All six answers survive.** 17/17.
+
+Then against the real repository: 164 cards, correct chunk and commit order, and
+**Korean intact through base64** — `btoa` throws above U+00FF and a hand-rolled
+encoder can ship silently mangled text, so this needed a real round trip.
+
+### Not done
+
+`meta.json` records `count` but not each chunk's `sha`, because the chunk list is
+built before the chunk PUTs return. The pull therefore refetches every chunk instead
+of skipping unchanged ones. Correctness is unaffected — sha is a cache hint, not
+truth — but at 10,000 cards that is 20 GETs and ~5MB per sync instead of one or two.
+Fix by composing `meta.json` after the chunks are written.
+
+`scripts/import-csv.mjs` (bulk load in a single git commit) is still unwritten.
 
 ### Sync has to be visible, not trusted
 
